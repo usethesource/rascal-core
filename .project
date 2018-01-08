@@ -3,7 +3,7 @@
 	<name>rascal-core</name>
 	<comment></comment>
 	<projects>
-		<project>TypePal</project>
+		<project>typepal</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
