@@ -3,5 +3,8 @@ Bundle-ManifestVersion: 2
 Bundle-Name: rascal_core
 Bundle-SymbolicName: rascal_core
 Bundle-Version: 1.0.0
-Require-Bundle: rascal_eclipse
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Import-Package: io.usethesource.vallang,
+ io.usethesource.vallang.exceptions,
+ io.usethesource.vallang.io,
+ io.usethesource.vallang.type
