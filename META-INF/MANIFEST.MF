@@ -6,5 +6,9 @@ Bundle-Version: 1.0.0
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.exceptions,
+ io.usethesource.vallang.impl,
+ io.usethesource.vallang.impl.persistent,
  io.usethesource.vallang.io,
- io.usethesource.vallang.type
+ io.usethesource.vallang.io.binary.message,
+ io.usethesource.vallang.type,
+ io.usethesource.vallang.visitors
