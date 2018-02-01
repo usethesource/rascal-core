@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.rascalmpl</groupId>
-	<artifactId>rascal</artifactId>
+	<artifactId>rascal-core</artifactId>
 	<version>0.11.0-SNAPSHOT</version>
 
 	<packaging>jar</packaging>
