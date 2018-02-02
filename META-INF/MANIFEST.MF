@@ -12,3 +12,4 @@ Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.io.binary.message,
  io.usethesource.vallang.type,
  io.usethesource.vallang.visitors
+Require-Bundle: AAA;bundle-version="1.0.0"
