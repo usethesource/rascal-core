@@ -12,6 +12,4 @@ Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.io.binary.message,
  io.usethesource.vallang.type,
  io.usethesource.vallang.visitors
-Require-Bundle: rascal_eclipse;bundle-version="0.10.0",
- typepal;bundle-version="0.2.0",
- org.eclipse.osgi;bundle-version="3.12.50"
+Require-Bundle: typepal;bundle-version="0.2.0"
