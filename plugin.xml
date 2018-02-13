@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+   <extension
+         id="rascal-core-summary"
+         name="rascal-core-summary"
+         point="rascal_eclipse.rascalIDESummary">
+      <summaryProvider
+            class="org.rascalmpl.core.ide.RascalCodeIDESummary">
+      </summaryProvider>
+   </extension>
+</plugin>
