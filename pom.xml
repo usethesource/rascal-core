@@ -51,11 +51,12 @@
 		<sourceDirectory>src</sourceDirectory>
 		<resources>
 			<resource>
-				<directory>src</directory>
-				<excludes>
-					<exclude>**/*.java</exclude>
-					<exclude>**/*.class</exclude>
-				</excludes>
+				<directory>.</directory>
+                <includes>
+                    <include>src/**/*.rsc</include>
+                    <include>src/**/*.gz</include>
+                    <include>src/**/*.ttl</include>
+                </includes>
 			</resource>
 			<resource>
 				<directory>.</directory>
