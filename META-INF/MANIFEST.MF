@@ -11,5 +11,6 @@ Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.io,
  io.usethesource.vallang.io.binary.message,
  io.usethesource.vallang.type,
- io.usethesource.vallang.visitors
+ io.usethesource.vallang.visitors,
+ org.rascalmpl.library
 Require-Bundle: typepal;bundle-version="0.2.0"
