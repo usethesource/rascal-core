@@ -23,5 +23,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/rascal"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/typepal"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
