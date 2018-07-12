@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: rascal_core
 Bundle-SymbolicName: rascal_core;singleton:=true
-Bundle-Version: 0.1.0.qualifier
+Bundle-Version: 0.2.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.exceptions,
@@ -13,4 +13,4 @@ Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.type,
  io.usethesource.vallang.visitors,
  org.rascalmpl.library
-Require-Bundle: typepal;bundle-version="0.2.0"
+Require-Bundle: typepal
