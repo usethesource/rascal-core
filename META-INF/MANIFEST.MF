@@ -14,3 +14,4 @@ Import-Package: io.usethesource.vallang,
  io.usethesource.vallang.visitors,
  org.rascalmpl.library
 Require-Bundle: typepal
+Export-Package: org.rascalmpl.core.library.lang.rascalcore.compile.runtime.traverse
