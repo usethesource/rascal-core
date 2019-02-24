@@ -442,6 +442,12 @@ bool asubtype(avoid(), AType _) = true;
 
 bool asubtype(anode(_), anode(_)) = true;
 
+// TODO: this is problematic. acons must be (substitutable for) function types, and function
+// types are not sub-typed of their own return types. so this definition breaks the soundness of
+// the type system . 
+// To fix we should probably remove the entire acons type kind from the language.
+// the type of a constructor function would then be just the function type with
+// arguments of the constructor and the defined adt as return type
 bool asubtype(x:acons(AType a, /*_,*/ list[AType/*NamedField*/] _, list[Keyword] _), AType b){
     res = asubtype(a, b);
     //println("asubtype(acons(<a>,_,_,_), <b>) ==\> <res>");
@@ -453,6 +459,9 @@ bool asubtype(AType a, x:acons(AType b, /*_,*/ list[AType/*NamedField*/] _, list
     return res;
 }
 bool asubtype(acons(AType a, /*str name,*/ list[AType/*NamedField*/] ap, list[Keyword] _), acons(a,/*name,*/list[AType/*NamedField*/] bp, list[Keyword] _)) = asubtype(ap,bp);
+
+// Temporary workaround for existence of acons next to afunc:
+bool asubtype(acons(AType a, list[AType/*NamedField*/] ap, list[Keyword] _), afunc(a,/*name,*/list[AType/*NamedField*/] bp, list[Keyword] _)) = asubtype(ap,bp);
 
 bool asubtype(aadt(str _, list[AType] _, _), anode(_)) = true;
 bool asubtype(aadt(str n, list[AType] l, _), aadt(n, list[AType] r, _)) = asubtype(l, r);
@@ -511,7 +520,8 @@ bool asubtype(abag(AType s), abag(AType t)) = asubtype(s, t);
 bool asubtype(amap(AType from1, AType to1), amap(AType from2, AType to2)) 
     { return  asubtype(from1, from2) && asubtype(to1, to2);}
 
-bool asubtype(afunc(AType r1, list[AType] p1, list[Keyword] _), afunc(AType r2, list[AType] p2, list[Keyword] _)) = asubtype(r1, r2) && asubtype(p2, p1); // note the contra-variance of the argument types
+ // note that comparability is enough for function argument sub-typing due to pattern matching semantics
+bool asubtype(afunc(AType r1, list[AType] p1, list[Keyword] _), afunc(AType r2, list[AType] p2, list[Keyword] _)) = asubtype(r1, r2) && comparable(p2, p1);
 
 bool asubtype(aparameter(str _, AType bound), AType r) = asubtype(bound, r);
 bool asubtype(AType l, aparameter(str _, AType bound)) = asubtype(l, bound);
@@ -531,6 +541,9 @@ bool asubtype(atypeList(list[AType] l), atypeList(list[AType] r)) = asubtype(l, 
 
 bool asubtype(list[AType] l, list[AType] r) = all(i <- index(l), asubtype(l[i], r[i])) when size(l) == size(r) && size(l) > 0;
 default bool asubtype(list[AType] l, list[AType] r) = size(l) == 0 && size(r) == 0;
+
+bool comparable(list[AType] l, list[AType] r) = all(i <- index(l), comparable(l[i], r[i])) when size(l) == size(r) && size(l) > 0;
+default bool comparable(list[AType] l, list[AType] r) = size(l) == 0 && size(r) == 0;
 
 bool asubtype(list[AType/*NamedField*/] l, list[AType/*NamedField*/] r) = all(i <- index(l), asubtype(l[i]/*.fieldType*/, r[i]/*.fieldType*/)) when size(l) == size(r) && size(l) > 0;
 default bool asubtype(list[AType/*NamedField*/] l, list[AType/*NamedField*/] r) = size(l) == 0 && size(r) == 0;
