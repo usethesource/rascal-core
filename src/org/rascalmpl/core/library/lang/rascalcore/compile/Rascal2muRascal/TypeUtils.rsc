@@ -347,6 +347,8 @@ void extractScopes(TModel tm){
    noverloaded = 0;
    
    // ... all overloaded functions
+   // TODO JV: function compatibility should be fully defined by the definition of asubtype,
+   // and this is quite different from the current definition of `compatible` which allows for _zero_ subtype variance.
    
    bool compatible(afunc(AType ret1, list[AType] formals1, list[Keyword] kwFormals1),
                    afunc(AType ret2, list[AType] formals2, list[Keyword] kwFormals2))

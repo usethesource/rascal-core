@@ -548,6 +548,14 @@ void collect(current: (Expression) `<Expression expression> ( <{Expression ","}*
                 return aloc();
             }
              
+            // TODO JV: this is a problem. The type of the resolved function expression is (probably) a simply lub function type,
+            // but here an artificial overloadedAType is used to represent a one-to-many name resolution. The type system and the
+            // name resolution are confused here, which will lead to confusion error messages. Also the overloaded "type",
+            // which is used here breaks certain properties of the type lattice, like uniqueness of correctly inferred types 
+            // because one can always add yet another overloaded type to the solution to create another correct solution. 
+            // This probably also has an effect on the efficiency of type inference.
+            // TODO: proposal is to separate name resolution from type resolution by first looking up the alternatives of
+            // the function without storing the intermediate result as an overloaded type.  
             if(overloadedAType(rel[loc, IdRole, AType] overloads) := texp){
               <filteredOverloads, identicalFormals> = filterOverloads(overloads, size(actuals));
               if({<key, idr, tp>} := filteredOverloads){
@@ -575,6 +583,10 @@ void collect(current: (Expression) `<Expression expression> ( <{Expression ","}*
                  }
                  next_cons:
                  for(ovl: <key, idr, tp> <- overloads){
+                    // TODO JV: this is weird.. how can a constructor tree be a function? An acons is the specific type of an 
+                    // instantiated constructor tree. The name of the constructor has a function type, not a acons type. So this condition
+                    // should always be false.
+                    // TODO: remove this entire handling of acons types in overloaded sets.
                     if(acons(ret:aadt(adtName, list[AType] parameters, _),  list[AType] fields, list[Keyword] kwFields) := tp){
                        try {
                             validReturnTypeOverloads += <key, dataId(), computeADTType(expression, adtName, scope, ret, fields, kwFields, actuals, keywordArguments, identicalFormals, s)>;
@@ -606,6 +618,8 @@ void collect(current: (Expression) `<Expression expression> ( <{Expression ","}*
                }
                 return checkArgsAndComputeReturnType(expression, scope, ret, formals, kwFormals, ft.varArgs, actuals, keywordArguments, [true | int i <- index(formals)], s);
             }
+            
+            // TODO JV: remove this because constructor functions do not have acons types, only their result has acons types.
             if(acons(ret:aadt(adtName, list[AType] parameters,_), list[AType] fields, list[Keyword] kwFields) := texp){
                return computeADTType(expression, adtName, scope, ret, fields/*<1>*/, kwFields, actuals, keywordArguments, [true | int i <- index(fields)], s);
             }

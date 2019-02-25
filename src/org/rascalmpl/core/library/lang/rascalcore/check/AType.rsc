@@ -442,12 +442,9 @@ bool asubtype(avoid(), AType _) = true;
 
 bool asubtype(anode(_), anode(_)) = true;
 
-// TODO: this is problematic. acons must be (substitutable for) function types, and function
-// types are not sub-typed of their own return types. so this definition breaks the soundness of
-// the type system . 
-// To fix we should probably remove the entire acons type kind from the language.
-// the type of a constructor function would then be just the function type with
-// arguments of the constructor and the defined adt as return type
+// TODO: perhaps the acons type can dissappear altogether, since it's not a type
+// which the user can see, its existence in error messages may lead to confusion while it does not
+// add any precision to the static detection of errors. 
 bool asubtype(x:acons(AType a, /*_,*/ list[AType/*NamedField*/] _, list[Keyword] _), AType b){
     res = asubtype(a, b);
     //println("asubtype(acons(<a>,_,_,_), <b>) ==\> <res>");
@@ -459,9 +456,6 @@ bool asubtype(AType a, x:acons(AType b, /*_,*/ list[AType/*NamedField*/] _, list
     return res;
 }
 bool asubtype(acons(AType a, /*str name,*/ list[AType/*NamedField*/] ap, list[Keyword] _), acons(a,/*name,*/list[AType/*NamedField*/] bp, list[Keyword] _)) = asubtype(ap,bp);
-
-// Temporary workaround for existence of acons next to afunc:
-bool asubtype(acons(AType a, list[AType/*NamedField*/] ap, list[Keyword] _), afunc(a,/*name,*/list[AType/*NamedField*/] bp, list[Keyword] _)) = asubtype(ap,bp);
 
 bool asubtype(aadt(str _, list[AType] _, _), anode(_)) = true;
 bool asubtype(aadt(str n, list[AType] l, _), aadt(n, list[AType] r, _)) = asubtype(l, r);
@@ -683,11 +677,20 @@ AType alub(\char-class(_), r:aadt("Tree", _, _)) = r;
 
 AType alub(afunc(AType lr, list[AType] lp, list[Keyword] lkw), afunc(AType rr, list[AType] rp, list[Keyword] rkw)) {
     lubReturn = alub(lr,rr);
-    lubParams = alub(atypeList(lp),atypeList(rp));    // TODO was glb, check this
-    if (atypeList(args) := lubParams)
-        return afunc(lubReturn, args, lkw == rkw ? lkw : []);
-    else
+    
+    // because functions _match_ their parameters, parameter types may be comparable (co- and contra-variant) and not
+    // only contra-variant. We choose the lub here over glb (both would be correct), to
+    // indicate to the programmer the intuition that rather _more_ than fewer functions are substitutable.
+    if (size(lp) == size(rp)) {
+        // JV TODO: I find this conditional propagation of the keyword parameters up the type hierarchy "dangerous", 
+        // because it seems to imply that they have something to do with the substitutability of higher-order functions, 
+        // but they don't.
+        // Also, if other functionality depends on this communication of the kw params, it's rather brittle and unpredictable.  
+        return afunc(lubReturn, alubList(lp, rp), lkw == rkw ? lkw : []);
+    }
+    else {
         return avalue();
+    }
 }
 
 public list[AType] alubList(list[AType] l, list[AType] r) = [alub(l[idx],r[idx]) | idx <- index(l)] when size(l) == size(r); 

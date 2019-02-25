@@ -1015,6 +1015,7 @@ private AType getPatternType0(current: (Pattern) `<Pattern expression> ( <{Patte
          validOverloads = {};
          next_cons:
          for(ovl: <key, idr, tp> <- overloads){
+            // TODO JV: this should probably be `afunc` and not `acons`
             if(acons(adtType:aadt(adtName, list[AType] parameters, _), list[AType] fields, list[Keyword] kwFields) := tp){
                try {
                      validReturnTypeOverloads += <key, idr, computeADTType(current, adtName, scope, adtType, fields, kwFields, pats, keywordArguments, identicalFields, s)>;
@@ -1034,6 +1035,7 @@ private AType getPatternType0(current: (Pattern) `<Pattern expression> ( <{Patte
       }
     }
 
+    // TODO JV: this should probably be `afunc` and not `acons`
     if(acons(adtType:aadt(adtName, list[AType] parameters, _), list[AType] fields, list[Keyword] kwFields) := texp){
        return computeADTType(current, adtName, scope, adtType, fields, kwFields, pats, keywordArguments, [true | int i <- index(fields)], s);
     }
@@ -1046,7 +1048,9 @@ tuple[rel[loc, IdRole, AType], list[bool]] filterOverloadedConstructors(rel[loc,
     prevFields = [];
     identicalFields = [true | int i <- [0 .. arity]];
     
-    for(ovl:<key, idr, tp> <- overloads){                       
+    for(ovl:<key, idr, tp> <- overloads){  
+        // TODO JV: this should probably be `afunc` and not `acons`
+        // why is the return type "comparable"?                     
         if(acons(ret:aadt(adtName, list[AType] parameters, _), list[AType] fields, list[Keyword] kwFields) := tp, comparable(ret, subjectType)){
            if(size(fields) == arity){
               filteredOverloads += ovl;

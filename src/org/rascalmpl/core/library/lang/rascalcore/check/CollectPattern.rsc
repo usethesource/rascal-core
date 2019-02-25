@@ -298,7 +298,9 @@ tuple[rel[loc, IdRole, AType], list[bool]] filterOverloadedConstructors(rel[loc,
     prevFields = [];
     identicalFields = [true | int i <- [0 .. arity]];
     
-    for(ovl:<key, idr, tp> <- overloads){                       
+    for(ovl:<key, idr, tp> <- overloads){  
+        // TODO JV: this should probably be `afunc` instead of `acons` since the name of constructors do not have `acons` types but `afunc` types.
+        // TODO JV: why should the return type be `comparable` and not a sub-type to filter the overloads?                     
         if(acons(ret:aadt(adtName, list[AType] parameters, _), list[AType] fields, list[Keyword] kwFields) := tp, comparable(ret, subjectType)){
            if(size(fields) == arity){
               filteredOverloads += ovl;

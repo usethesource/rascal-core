@@ -682,7 +682,15 @@ void collect(current:(Variant) `<Name name> ( <{TypeArg ","}* arguments> <Keywor
                     adtType = s.getType(adt);
                     kwFormalTypes = [<s.getType(kwf.\type)[label=prettyPrintName(kwf.name)], kwf.expression> | kwf <- kwFormals + commonKwFormals];
                     formalTypes = [f is named ? s.getType(f)[label=prettyPrintName(f.name)] : s.getType(f) | f <- formals];
-                    return acons(adtType, formalTypes, kwFormalTypes)[label=prettyPrintName(name)];
+                    
+                    // TODO JV: this is a problem. The type of the _name_ of a constructor is not an acons,
+                    // that type is the type of what this constructor function _produces_ instead: (an ADT constructor value). 
+                    // The type of the _name_ of the constructor function would be `afunc(adtType, formalType, kwFormalTypes)`.
+                    // For this pull request I've adapted to fix, but there may be unforeseen consequences;
+                    // other code which depends on this bug and would no forget that this used to be a constructor. 
+                    // TODO: I suspect we must add definitions of constructors somewhere, next to storing the type of this name?
+                    return afunc(adtType, formalTypes, kwFormalTypes)[label=prettyPrintName(name)];
+                    //return acons(adtType, formalTypes, kwFormalTypes)[label=prettyPrintName(name)];
                 }));
             c.fact(current, name);
              // The standard rules would declare arguments and kwFormals as variableId();
