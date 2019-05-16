@@ -644,7 +644,7 @@ private tuple[rel[loc, IdRole, AType], list[bool]] filterOverloads(rel[loc, IdRo
                  for(int i <- relevantFormals) identicalFormals[i] = identicalFormals[i] && (comparable(prevFormals[i], formals[i]));
               }
            }
-        } else
+        } else // TODO JV: remove this because function names to not have acons types. 
         if(acons(aadt(adtName, list[AType] parameters,_), list[AType] fields, list[Keyword] kwFields) := tp){
            if(size(fields) == arity){
               filteredOverloads += ovl;

@@ -686,9 +686,12 @@ void collect(current:(Variant) `<Name name> ( <{TypeArg ","}* arguments> <Keywor
                     // TODO JV: this is a problem. The type of the _name_ of a constructor is not an acons,
                     // that type is the type of what this constructor function _produces_ instead: (an ADT constructor value). 
                     // The type of the _name_ of the constructor function would be `afunc(adtType, formalType, kwFormalTypes)`.
-                    // For this pull request I've adapted to fix, but there may be unforeseen consequences;
-                    // other code which depends on this bug and would no forget that this used to be a constructor. 
+                    // For this pull request I've adapted to "fix" this bug, but there may be unforeseen consequences;
+                    // other code which depends on this bug and would now loose the distincation that this name refers to a constructor function. 
                     // TODO: I suspect we must add definitions of constructors somewhere, next to storing the type of this name?
+                    // probably in the type checker of patterns this goes wrong, where else? In expressions this is ok since
+                    // a constructor function is indeed a function. This fix by the way, also fixes problems with constructor functions
+                    // passed as higher-order function parameters.  
                     return afunc(adtType, formalTypes, kwFormalTypes)[label=prettyPrintName(name)];
                     //return acons(adtType, formalTypes, kwFormalTypes)[label=prettyPrintName(name)];
                 }));
