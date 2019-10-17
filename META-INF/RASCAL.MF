@@ -1,4 +1,5 @@
 Manifest-Version: 0.0.1
+Project-Name: rascal-core
 Main-Function: main
 Main-Module: Plugin
 Source: src/org/rascalmpl/core/library
