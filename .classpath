@@ -18,5 +18,12 @@
 	</classpathentry>
 	<classpathentry combineaccessrules="false" kind="src" path="/rascal"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/typepal"/>
+	<classpathentry kind="src" output="target/test-classes" path="test">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
