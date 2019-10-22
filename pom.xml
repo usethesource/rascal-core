@@ -121,12 +121,6 @@
 	</build>
 
 	<dependencies>
-        <dependency>
-            <groupId>org.rascalmpl</groupId>
-            <artifactId>rascal</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
-        </dependency>
-
 		<!-- Regular POM Dependencies -->
 		<dependency>
 			<groupId>junit</groupId>
