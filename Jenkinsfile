@@ -18,6 +18,8 @@ node {
         }
 
         build job: '../../cwi-swat/rascal-core-plugin/master', wait: false
+        build job: '../../cwi-swat/rascal-maven-plugin/master', wait: false
+
     } catch (e) {
         slackSend (color: '#d9534f', message: "FAILED: <${env.BUILD_URL}|${env.JOB_NAME} [${env.BUILD_NUMBER}]>")
         throw e
