@@ -66,6 +66,22 @@
         </resources>
         <plugins>
             <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build-classpath</goal>
+                        </goals>
+                        <configuration>
+                            <outputProperty>maven.compile.classpath</outputProperty>
+                            <pathSeparator>;</pathSeparator>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
@@ -116,6 +132,7 @@
                                     -Xmx2G
                                     -Xss128m
                                     -Dfile.encoding=UTF-8
+                                    -Drascal.test.source.path=${maven.compile.classpath}
                             </argLine>
                             <includes>
                                 <include>**/*Tests.java</include>
