@@ -3,4 +3,5 @@ Project-Name: rascal-core
 Main-Function: main
 Main-Module: Plugin
 Source: src/org/rascalmpl/core/library
+Require-Libraries: |lib://typepal|
 
