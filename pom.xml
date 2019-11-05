@@ -132,7 +132,6 @@
                                     -Xmx2G
                                     -Xss128m
                                     -Dfile.encoding=UTF-8
-                                    -Drascal.test.source.path=${maven.compile.classpath}
                             </argLine>
                             <includes>
                                 <include>**/*Tests.java</include>
