@@ -57,6 +57,14 @@
             </resource>
             <resource>
                 <directory>.</directory>
+                <includes>
+                    <include>src/**/*.rsc</include>
+                    <include>src/**/*.gz</include>
+                    <include>src/**/*.ttl</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>.</directory>
                 <filtering>false</filtering>
                 <includes>
                     <include>META-INF/RASCAL.MF</include>
