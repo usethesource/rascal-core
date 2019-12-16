@@ -10,7 +10,7 @@ node {
             }
 
             stage('Deploy'){
-                sh "mvn deploy"
+                sh "mvn -DskipTests deploy"
             }
         }
         if (currentBuild.previousBuild.result == "FAILURE") { 
