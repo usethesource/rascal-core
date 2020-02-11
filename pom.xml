@@ -3,13 +3,13 @@
 
     <groupId>org.rascalmpl</groupId>
     <artifactId>rascal-core</artifactId>
-    <version>0.4.2-SNAPSHOT</version>
+    <version>0.4.2</version>
 
     <packaging>jar</packaging>
 
     <scm>
         <developerConnection>scm:git:ssh://git@github.com/usethesource/rascal-core.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.4.2</tag>
     </scm>
 
     <!-- deployment configuration (usethesource) -->
@@ -182,13 +182,13 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.15.2-SNAPSHOT</version>
+            <version>0.15.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.4.1-SNAPSHOT</version>
+            <version>0.4.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
