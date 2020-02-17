@@ -16,24 +16,24 @@
     <distributionManagement>
         <repository>
             <id>usethesource-releases</id>
-            <url>http://nexus.usethesource.io/content/repositories/releases/</url>
+            <url>https://nexus.usethesource.io/content/repositories/releases/</url>
         </repository>
         <snapshotRepository>
             <id>usethesource-snapshots</id>
-            <url>http://nexus.usethesource.io/content/repositories/snapshots/</url>
+            <url>https://nexus.usethesource.io/content/repositories/snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
     <!-- dependency resolution configuration (usethesource) -->
     <repositories>
         <repository>
             <id>usethesource</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
+            <url>https://nexus.usethesource.io/content/repositories/public/</url>
         </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
             <id>usethesource</id>
-            <url>http://nexus.usethesource.io/content/repositories/public/</url>
+            <url>https://nexus.usethesource.io/content/repositories/public/</url>
         </pluginRepository>
     </pluginRepositories>
 
