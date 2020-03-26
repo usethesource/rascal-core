@@ -150,7 +150,7 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.15.4-SNAPSHOT</version>
+            <version>0.17.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
