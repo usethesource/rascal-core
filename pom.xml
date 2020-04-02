@@ -3,7 +3,7 @@
 
     <groupId>org.rascalmpl</groupId>
     <artifactId>rascal-core</artifactId>
-    <version>0.4.10-SNAPSHOT</version>
+    <version>0.4.12-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
@@ -150,13 +150,13 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.15.4-SNAPSHOT</version>
+            <version>0.17.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.4.4-SNAPSHOT</version>
+            <version>0.4.5-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
