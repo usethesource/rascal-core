@@ -16,6 +16,8 @@ node {
         if (currentBuild.previousBuild.result == "FAILURE") { 
             slackSend (color: '#5cb85c',  message: "BUILD BACK TO NORMAL: <${env.BUILD_URL}|${env.JOB_NAME} [${env.BUILD_NUMBER}]>")
         }
+
+        build job: '../../cwi-swat/rascal-codegen-ideas/master', wait: false // trigger tests of compiled code in rascal-codegen-ideas
     } catch (e) {
         slackSend (color: '#d9534f', message: "FAILED: <${env.BUILD_URL}|${env.JOB_NAME} [${env.BUILD_NUMBER}]>")
         throw e
