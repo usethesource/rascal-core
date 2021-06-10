@@ -93,7 +93,7 @@
                         </goals>
                         <configuration>
                             <generated>
-                                ${project.basedir}/generated/compiled_rascal
+                                ${project.basedir}/generated
                             </generated>
                             <sources>
                                 <source>${project.basedir}/generated</source>

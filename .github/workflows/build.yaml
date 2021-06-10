@@ -30,10 +30,7 @@ jobs:
           key: m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: m2
 
-      - name: Compile and Typechek 
-        run: mvn -B compile
-
-      - name: Test
+      - name: Compile, Generate and Test (never fails)
         run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4  test
 
       - name: Publish Test Report on github action
