@@ -117,7 +117,7 @@
                                 <include>**/*Tests.java</include>
                             </includes>
                             <testSourceDirectory>${basedir}/src/</testSourceDirectory>
-                            <testClassesDirectory>${project.build.directory}/classes/</testClassesDirectory>
+                            <testClassesDirectory>${project.build.directory}/test-classes/</testClassesDirectory>
                         </configuration>
                 <executions>
                     <execution>
