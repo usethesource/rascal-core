@@ -64,27 +64,44 @@
             </resource>
         </resources>
         <plugins>
-            <!--<plugin>
-                <groupId>org.rascalmpl</groupId>
-                <artifactId>rascal-maven-plugin</artifactId>
-                <version>0.3.3</version>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.4.1</version>
                 <configuration>
-                    <bin>${project.build.outputDirectory}</bin>
-                    <srcs>
-                        <src>${project.basedir}/src</src>
-                    </srcs>
-                    <errorsAsWarnings>true</errorsAsWarnings>
+                    <filesets>
+                        <fileset>
+                            <directory>generated</directory>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
-                        <id>rascal-core-compile</id>
-                        <phase>compile</phase>
+                        <id>add-source</id>
+                        <phase>generate-test-sources</phase>
                         <goals>
-                            <goal>compile</goal>
+                            <goal>add-test-source</goal>
                         </goals>
+                        <configuration>
+                            <generated>
+                                ${project.basedir}/generated/compiled_rascal
+                            </generated>
+                            <sources>
+                                <source>${project.basedir}/generated</source>
+                            </sources>
+                        </configuration>
                     </execution>
                 </executions>
-            </plugin> !-->
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -98,6 +115,7 @@
                             </argLine>
                             <includes>
                                 <include>**/*Tests.java</include>
+                                <include>**/compiled_rascal/**/*Tests.java</include>
                             </includes>
                             <testSourceDirectory>${basedir}/src/</testSourceDirectory>
                             <testClassesDirectory>${project.build.directory}/classes/</testClassesDirectory>
@@ -112,7 +130,49 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <compilerId>eclipse</compilerId>
+                    <compilerArguments>
+                        <!-- WATCH OUT: THIS IGNORES ERRORS in both generated and manual sources; 
+                             while not all tests succeed this is necessary, but as soon as the compiler
+                             is finished we should remove this flag or even consider switching back
+                             to the OpenJDK Java compiler: -->
+                        <errorsAsWarnings>true</errorsAsWarnings>
+                        <proceedOnError/>
+                        <properties>${project.basedir}/.settings/org.eclipse.jdt.core.prefs</properties>
+                    </compilerArguments> 
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-compiler-eclipse</artifactId>
+                        <version>2.8.4</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.rascalmpl</groupId>
+                <artifactId>rascal-maven-plugin</artifactId>
+                <version>0.4.5-RC2</version>
+                <configuration>
+                    <generated>${project.basedir}/generated</generated>
+                    <mainModule>GenerateTestSources</mainModule>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>it-compile</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>generate-sources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
@@ -129,7 +189,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
