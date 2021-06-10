@@ -36,6 +36,7 @@
     <build>
         <sourceDirectory>src</sourceDirectory>
         <testSourceDirectory>test</testSourceDirectory>
+        <testOutputDirectory>${project.build.directory}/test-classes</testOutputDirectory>
         <resources>
             <resource>
                 <directory>src/org/rascalmpl/core/library</directory>
