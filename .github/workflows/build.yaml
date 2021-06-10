@@ -34,7 +34,7 @@ jobs:
         run: mvn -B compile
 
       - name: Test
-        run: mvn -B test
+        run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4 
 
       - name: Publish Test Report on github action
         if: ${{ always() && github.event_name != 'pull_request' }} # to bad this doesn't work nicely with external pull requests

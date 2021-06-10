@@ -115,7 +115,6 @@
                             </argLine>
                             <includes>
                                 <include>**/*Tests.java</include>
-                                <include>**/compiled_rascal/**/*Tests.java</include>
                             </includes>
                             <testSourceDirectory>${basedir}/src/</testSourceDirectory>
                             <testClassesDirectory>${project.build.directory}/classes/</testClassesDirectory>
@@ -187,10 +186,21 @@
     <dependencies>
         <!-- Regular POM Dependencies -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.6.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.6.2</version>
+        </dependency>
+            <dependency>
+    <groupId>org.junit.vintage</groupId>
+    <artifactId>junit-vintage-engine</artifactId>
+    <version>5.6.2</version>
+    <scope>test</scope>
+</dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
