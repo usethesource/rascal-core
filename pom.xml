@@ -3,13 +3,13 @@
 
     <groupId>org.rascalmpl</groupId>
     <artifactId>rascal-core</artifactId>
-    <version>0.4.18-SNAPSHOT</version>
+    <version>0.4.17-STABLE-RC1</version>
 
     <packaging>jar</packaging>
 
     <scm>
         <developerConnection>scm:git:ssh://git@github.com/usethesource/rascal-core.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.4.17-STABLE-RC1</tag>
     </scm>
 
     <!-- dependency resolution configuration (usethesource) -->
@@ -143,7 +143,7 @@
                              is finished we should remove this flag or even consider switching back
                              to the OpenJDK Java compiler: -->
                         <errorsAsWarnings>true</errorsAsWarnings>
-                        <proceedOnError/>
+                        <proceedOnError />
                         <properties>${project.basedir}/.settings/org.eclipse.jdt.core.prefs</properties>
                     </compilerArguments> 
                 </configuration>
