@@ -14,7 +14,7 @@ public void package(list[loc] srcs, loc bin, loc sourceLookup) {
 void packageSourceFiles(list[loc] srcs, loc bin) {
   for (folder <- srcs, file <- find(folder, "rsc")) {
     event("Copying <file>");
-    copyFile(file, bin + relativize(folder, file));
+    copy(file, bin + relativize(folder, file));
   }
 }
 
