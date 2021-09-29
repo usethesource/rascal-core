@@ -28,8 +28,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -134,8 +132,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.7.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>11</release>
                     <compilerId>eclipse</compilerId>
                     <compilerArguments>
                         <!-- WATCH OUT: THIS IGNORES ERRORS in both generated and manual sources; 
@@ -201,7 +198,7 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.19.4-RC11</version>
+            <version>0.20.0-RC1</version>
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
@@ -212,7 +209,7 @@
         <dependency>
         	<groupId>io.usethesource</groupId>
         	<artifactId>vallang</artifactId>
-        	<version>0.13.1</version>
+        	<version>0.14.2</version>
         </dependency>
     </dependencies>
 </project>
