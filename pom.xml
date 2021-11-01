@@ -72,7 +72,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>generated</directory>
+                            <directory>${project.build.directory}/generated-sources</directory>
                             <includes>
                                 <include>**/*</include>
                             </includes>
@@ -94,10 +94,10 @@
                         </goals>
                         <configuration>
                             <generated>
-                                ${project.basedir}/generated
+                                ${project.build.directory}/generated-sources
                             </generated>
                             <sources>
-                                <source>${project.basedir}/generated</source>
+                                <source>${project.build.directory}/generated-sources</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -160,7 +160,7 @@
                 <artifactId>rascal-maven-plugin</artifactId>
                 <version>0.4.5-RC2</version>
                 <configuration>
-                    <generated>${project.basedir}/generated</generated>
+                    <generated>${project.build.directory}/generated-sources</generated>
                     <mainModule>GenerateTestSources</mainModule>
                 </configuration>
                 <executions>
@@ -200,11 +200,6 @@
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
-            <artifactId>rascal</artifactId>
-            <version>0.19.4-RC11-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
             <version>0.4.12</version>
             <scope>provided</scope>
@@ -213,6 +208,11 @@
         	<groupId>io.usethesource</groupId>
         	<artifactId>vallang</artifactId>
         	<version>0.13.1</version>
+        </dependency>
+        <dependency>
+        	<groupId>org.rascalmpl</groupId>
+        	<artifactId>rascal</artifactId>
+        	<version>0.20.0-RC2-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
