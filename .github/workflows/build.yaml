@@ -33,11 +33,11 @@ jobs:
       - name: Compile, Generate and Test (never fails)
         run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4  test
 
-      - name: Publish Test Report on github action
+      - name: Publish Test Report
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
         if: ${{ always() && github.event_name != 'pull_request' }} # to bad this doesn't work nicely with external pull requests
-        uses: scacap/action-surefire-report@v1
         with:
-          check_name: "Test Report"
+          files: test-results/**/*.xml
 
       - name: Attach artifact
         id: build-artifact
