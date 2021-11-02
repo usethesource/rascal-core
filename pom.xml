@@ -70,7 +70,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>generated</directory>
+                            <directory>${project.build.directory}/generated-sources</directory>
                             <includes>
                                 <include>**/*</include>
                             </includes>
@@ -92,10 +92,10 @@
                         </goals>
                         <configuration>
                             <generated>
-                                ${project.basedir}/generated
+                                ${project.build.directory}/generated-sources
                             </generated>
                             <sources>
-                                <source>${project.basedir}/generated</source>
+                                <source>${project.build.directory}/generated-sources</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -157,7 +157,7 @@
                 <artifactId>rascal-maven-plugin</artifactId>
                 <version>0.5.0-RC2</version>
                 <configuration>
-                    <generated>${project.basedir}/generated</generated>
+                    <generated>${project.build.directory}/generated-sources</generated>
                     <mainModule>GenerateTestSources</mainModule>
                 </configuration>
                 <executions>

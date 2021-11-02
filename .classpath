@@ -16,16 +16,16 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/rascal"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/typepal"/>
 	<classpathentry kind="src" output="target/test-classes" path="test">
 		<attributes>
+			<attribute name="test" value="true"/>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
-			<attribute name="test" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="target/test-classes" path="generated">
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/rascal"/>
+	<classpathentry kind="src" output="target/test-classes" path="target/generated-sources">
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
