@@ -117,6 +117,7 @@
                             </includes>
                             <testSourceDirectory>${basedir}/src/</testSourceDirectory>
                             <testClassesDirectory>${project.build.directory}/test-classes/</testClassesDirectory>
+                            <testFailureIgnore>true</testFailureIgnore>
                         </configuration>
                 <executions>
                     <execution>
