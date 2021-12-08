@@ -52,7 +52,7 @@ jobs:
           draft: true
           files: ${{ steps.build-artifact.outputs.artifact-root-dir}}/**/*
         env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy
         if: startsWith(github.ref, 'refs/tags/v')
