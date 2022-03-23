@@ -205,12 +205,12 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.22.0</version>
+            <version>0.22.3</version>
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.7.4</version>
+            <version>0.7.5</version>
         </dependency>
         <dependency>
         	<groupId>io.usethesource</groupId>
