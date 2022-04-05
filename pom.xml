@@ -39,8 +39,6 @@
 
     <build>
         <sourceDirectory>src</sourceDirectory>
-        <testSourceDirectory>test</testSourceDirectory>
-        <testOutputDirectory>${project.build.directory}/test-classes</testOutputDirectory>
         <resources>
             <resource>
                 <directory>src/org/rascalmpl/core/library</directory>
@@ -92,9 +90,9 @@
                 <executions>
                     <execution>
                         <id>add-source</id>
-                        <phase>generate-test-sources</phase>
+                        <phase>generate-sources</phase>
                         <goals>
-                            <goal>add-test-source</goal>
+                            <goal>add-source</goal>
                         </goals>
                         <configuration>
                             <generated>
@@ -121,8 +119,8 @@
                             <includes>
                                 <include>**/*Tests.java</include>
                             </includes>
-                            <testSourceDirectory>${basedir}/src/</testSourceDirectory>
-                            <testClassesDirectory>${project.build.directory}/test-classes/</testClassesDirectory>
+                            <testSourceDirectory>${project.build.directory}/generated-sources/</testSourceDirectory>
+                            <testClassesDirectory>${project.build.directory}/classes/</testClassesDirectory>
                             <testFailureIgnore>true</testFailureIgnore>
                         </configuration>
                 <executions>
