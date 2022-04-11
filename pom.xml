@@ -95,11 +95,9 @@
                             <goal>add-test-source</goal>
                         </goals>
                         <configuration>
-                            <generated>
-                                target/generated-test-sources
-                            </generated>
                             <sources>
                                 <source>target/generated-test-sources</source>
+                                <source>test</source>
                             </sources>
                         </configuration>
                     </execution>
