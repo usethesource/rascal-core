@@ -123,20 +123,20 @@
                         <scope>compile</scope>
                     </dependency>
                 </dependencies>
-                        <configuration>
-                            <argLine>
-                                    -ea
-                                    -Xmx2G
-                                    -Xss128m
-                                    -Dfile.encoding=UTF-8
-                            </argLine>
-                            <testSourceDirectory>${project.build.directory}/generated-test-sources/</testSourceDirectory>
-                            <testClassesDirectory>${project.build.directory}/test-classes</testClassesDirectory>
-                            <testFailureIgnore>true</testFailureIgnore>
-                            <includes>
-                                <include>**/*Tests.java</include>
-                            </includes>
-                        </configuration>
+                <configuration>
+                    <argLine>
+                        -ea
+                        -Xmx2G
+                        -Xss128m
+                        -Dfile.encoding=UTF-8
+                    </argLine>
+                    <testSourceDirectory>${project.build.directory}/generated-test-sources/</testSourceDirectory>
+                    <testClassesDirectory>${project.build.directory}/test-classes</testClassesDirectory>
+                    <testFailureIgnore>true</testFailureIgnore>
+                    <includes>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>test</id>
