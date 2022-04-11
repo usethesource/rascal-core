@@ -96,10 +96,10 @@
                         </goals>
                         <configuration>
                             <generated>
-                                ${project.build.directory}/generated-test-sources
+                                target/generated-test-sources
                             </generated>
                             <sources>
-                                <source>${project.build.directory}/generated-test-sources</source>
+                                <source>target/generated-test-sources</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -109,20 +109,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M3</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-api</artifactId>
-                        <version>5.6.2</version>
-                        <scope>compile</scope>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>5.6.2</version>
-                        <scope>compile</scope>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <argLine>
                         -ea
@@ -130,12 +116,11 @@
                         -Xss128m
                         -Dfile.encoding=UTF-8
                     </argLine>
-                    <testSourceDirectory>${project.build.directory}/generated-test-sources/</testSourceDirectory>
+                    <includes>
+                        <include>**/*Tests.class</include>
+                    </includes>
                     <testClassesDirectory>${project.build.directory}/test-classes</testClassesDirectory>
                     <testFailureIgnore>true</testFailureIgnore>
-                    <includes>
-                        <include>**/*Tests.java</include>
-                    </includes>
                 </configuration>
                 <executions>
                     <execution>
@@ -201,6 +186,24 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Regular POM Dependencies -->
         <dependency>
             <groupId>org.rascalmpl</groupId>
