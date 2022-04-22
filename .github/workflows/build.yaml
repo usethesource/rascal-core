@@ -34,12 +34,14 @@ jobs:
       - name: Compile, Generate and Test (never fails)
         run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4  test
 
-          #      - name: Publish Test Report
-          #        uses: EnricoMi/publish-unit-test-result-action/composite@v1
-          #        if: ${{ always() && github.event_name != 'pull_request' }} # to bad this doesn't work nicely with external pull requests
-          #        with:
-          #          files: target/surefire-reports/**/*.xml
-          #          check_run_annotations: 'all tests, skipped tests'
+      - name: Publish Test Report
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        if: ${{ always() && github.event_name != 'pull_request' }} # to bad this doesn't work nicely with external pull requests
+        with:
+          files: target/surefire-reports/**/*.xml
+          check_run_annotations: 'all tests, skipped tests'
+          root_log_level: DEBUG
+          log_level: DEBUG
 
       - name: Attach artifact
         id: build-artifact
