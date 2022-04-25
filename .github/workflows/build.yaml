@@ -40,8 +40,6 @@ jobs:
         with:
           files: target/surefire-reports/**/*.xml
           check_run_annotations: 'all tests, skipped tests'
-          root_log_level: DEBUG
-          log_level: DEBUG
 
       - name: Attach artifact
         id: build-artifact
