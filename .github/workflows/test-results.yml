@@ -35,6 +35,6 @@ jobs:
           check_name: Test Results
           event_file: artifacts/Event File/event.json
           event_name: ${{ github.event.workflow_run.event }}
-          files: 'artifacts/**/*.xml'
+          files: 'artifacts/Test Results/**/*.xml'
           check_run_annotations: 'all tests, skipped tests'
 
