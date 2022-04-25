@@ -1,4 +1,4 @@
-name: Build and Deploy 
+name: Build and Deploy
 on:
   push:
     branches:
@@ -34,12 +34,13 @@ jobs:
       - name: Compile, Generate and Test (never fails)
         run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4  test
 
-      - name: Publish Test Report
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
-        if: ${{ always() && github.event_name != 'pull_request' }} # to bad this doesn't work nicely with external pull requests
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
         with:
-          files: target/surefire-reports/**/*.xml
-          check_run_annotations: 'all tests, skipped tests'
+          name: Test Results
+          path: |
+            target/surefire-reports/**/*.xml
 
       - name: Attach artifact
         id: build-artifact
@@ -68,3 +69,13 @@ jobs:
           ssh-username: ${{ secrets.RELEASE_SSH_USERNAME }}
           ssh-private-key: ${{ secrets.RELEASE_SSH_PRIVATE_KEY }}
           maven-options: "-Drascal.generate.skip"
+
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
