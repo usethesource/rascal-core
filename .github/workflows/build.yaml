@@ -34,6 +34,17 @@ jobs:
       - name: Compile, Generate and Test (never fails)
         run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4  test
 
+      - name: Rename colon in file names
+        run: |
+          find target/surefire-reports -name '*.xml' | while read file
+          do
+            if [[ "$file" == *:* ]]
+            then
+              # replace the colon with a unicode character that looks similar
+              mv -v "$file" "${file//:/꞉}"
+            fi
+          done
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v3
