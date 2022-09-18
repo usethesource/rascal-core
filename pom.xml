@@ -214,12 +214,12 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>rascal</artifactId>
-            <version>0.23.2</version>
+            <version>0.24.3</version>
         </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.7.6</version>
+            <version>0.7.9</version>
         </dependency>
         <dependency>
         	<groupId>io.usethesource</groupId>
