@@ -196,20 +196,15 @@
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
-            <version>5.6.2</version>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.6.2</version>
+            <version>5.8.2</version>
         </dependency>
         <!-- Regular POM Dependencies -->
-        <dependency>
-            <groupId>org.rascalmpl</groupId>
-            <artifactId>rascal</artifactId>
-            <version>0.29.1-RC4-SNAPSHOT</version>
-        </dependency>
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
@@ -218,12 +213,17 @@
         <dependency>
         	<groupId>io.usethesource</groupId>
         	<artifactId>vallang</artifactId>
-        	<version>0.14.7</version>
+        	<version>0.14.8-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.6.2</version> 
+            <version>5.8.2</version> 
+        </dependency>
+        <dependency>
+        	<groupId>org.rascalmpl</groupId>
+        	<artifactId>rascal</artifactId>
+        	<version>0.30.3-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

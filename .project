@@ -12,13 +12,23 @@
 			</arguments>
 		</buildCommand>
 		<buildCommand>
-			<name>rascal_eclipse.rascal_builder</name>
+			<name>org.eclipse.ui.externaltools.ExternalToolBuilder</name>
+			<triggers>full,incremental,</triggers>
 			<arguments>
+				<dictionary>
+					<key>LaunchConfigHandle</key>
+					<value>&lt;project&gt;/.externalToolBuilders/rascal_eclipse.rascal_builder.launch</value>
+				</dictionary>
 			</arguments>
 		</buildCommand>
 		<buildCommand>
-			<name>rascal_eclipse.term_builder</name>
+			<name>org.eclipse.ui.externaltools.ExternalToolBuilder</name>
+			<triggers>full,incremental,</triggers>
 			<arguments>
+				<dictionary>
+					<key>LaunchConfigHandle</key>
+					<value>&lt;project&gt;/.externalToolBuilders/rascal_eclipse.term_builder.launch</value>
+				</dictionary>
 			</arguments>
 		</buildCommand>
 		<buildCommand>
@@ -35,12 +45,12 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1609877435733</id>
+			<id>1682589079608</id>
 			<name></name>
 			<type>30</type>
 			<matcher>
 				<id>org.eclipse.core.resources.regexFilterMatcher</id>
-				<arguments>node_modules|.git|__CREATED_BY_JAVA_LANGUAGE_SERVER__</arguments>
+				<arguments>1.0-name-matches-false-true-node_modules|.git|__CREATED_BY_JAVA_LANGUAGE_SERVER__</arguments>
 			</matcher>
 		</filter>
 	</filteredResources>
