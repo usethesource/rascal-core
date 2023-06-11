@@ -223,7 +223,7 @@
         <dependency>
         	<groupId>org.rascalmpl</groupId>
         	<artifactId>rascal</artifactId>
-        	<version>0.30.3-SNAPSHOT</version>
+        	<version>0.30.1</version>
         </dependency>
     </dependencies>
 </project>
