@@ -213,7 +213,7 @@
         <dependency>
         	<groupId>io.usethesource</groupId>
         	<artifactId>vallang</artifactId>
-        	<version>0.14.8-SNAPSHOT</version>
+        	<version>0.15</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
