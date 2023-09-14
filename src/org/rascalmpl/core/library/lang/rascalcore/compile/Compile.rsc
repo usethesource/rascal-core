@@ -116,12 +116,12 @@ list[Message] compile(str qualifiedModuleName, PathConfig pcfg, loc reloc=|norel
 //list[RVMModule] compile(list[str] qualifiedModuleNames, PathConfig pcfg, loc reloc=|noreloc:///|, bool verbose = false, bool optimize=true, bool enableAsserts=false){
 //    uniq = uuidi();
 //    containerName = "Container<uniq < 0 ? -uniq : uniq>";
-//    containerLocation = |test-modules:///<containerName>.rsc|;
+//    containerLocation = |memory://test-modules/<containerName>.rsc|;
 //    container = "module <containerName>
 //                '<for(str m <- qualifiedModuleNames){>
 //                'import <escapeQualifiedName(m)>;<}>";
 //    writeFile(containerLocation, container);
-//    pcfg.srcs = |test-modules:///| + pcfg.srcs;
+//    pcfg.srcs = |memory://test-modules/| + pcfg.srcs;
 //    
 //    rvmContainer = compile(containerName, pcfg, reloc=reloc, verbose=verbose, optimize=optimize, enableAsserts=enableAsserts);
 //    set[Message] messages = {};
