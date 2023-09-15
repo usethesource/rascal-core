@@ -207,7 +207,6 @@ public abstract class $RascalModule /*extends ATypeFactory*/ {
 						@Override
 						public Set<ISourceLocation> findResources(String fileName) {
 							Set<ISourceLocation> result = new HashSet<>();
-							URIResolverRegistry reg = URIResolverRegistry.getInstance();
 
 							try {
 								for (URL found : Collections.list(getClass().getClassLoader().getResources(fileName))) {
