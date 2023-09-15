@@ -137,9 +137,9 @@ void rascalPreCollectInitialization(map[str, Tree] namedTrees, Collector c){
 
 private int npc = 0;
 @doc{
-  PathConfig for testing generated modules in |test-modules:///| in memory file system.
+  PathConfig for testing generated modules in |memory://test-modules/| in memory file system.
   
-  * gets source files exclusively from |test-modules:///|
+  * gets source files exclusively from |memory://test-modules/|
   * generates bin files in the in-memory file system 
   * depends only on the pre-compiled standard library from the rascal project 
 }
@@ -147,8 +147,8 @@ public PathConfig getDefaultPathConfig() {
     npc += 1;
     snpc = "<npc>";
     return pathConfig(   
-        srcs = [|test-modules:///| /* test-modules is an in-memory file-system */], 
-        bin = |test-modules:///rascal-core-tests-bin-<snpc>|, 
+        srcs = [|memory://test-modules/| /* test-modules is an in-memory file-system */], 
+        bin = |memory://test-modules/rascal-core-tests-bin-<snpc>|, 
         libs = [|lib://rascal/|]
     );
 }
@@ -186,7 +186,7 @@ public PathConfig getRascalProjectPathConfig() {
     snpc = "<npc>";
     return pathConfig(   
         srcs = [|project://rascal/src/org/rascalmpl/library|], 
-        bin = |test-modules:///rascal-lib-bin-<snpc>|, 
+        bin = |memory://test-modules/rascal-lib-bin-<snpc>|, 
         libs = []
     );  
 }  
