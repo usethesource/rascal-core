@@ -190,6 +190,8 @@ AType instantiateRascalTypeParams(AType pt:aparameter(str s, AType t), Bindings 
     = pt when s notin bindings;
 AType instantiateRascalTypeParams(a: aadt(str s, list[AType] ps, SyntaxRole sr), Bindings bindings) 
     = aadt(s, [instantiateRascalTypeParams(p,bindings) | p <- ps], sr);
+AType instantiateRascalTypeParams(a: amodifyTo(t, SyntaxRole sr), Bindings bindings) 
+    = amodifyTo(instantiateRascalTypeParams(t, bindings), sr);
 AType instantiateRascalTypeParams(acons(AType a, /*str name,*/ list[AType/*NamedField*/] fields, list[Keyword] kwFields, alabel=consName), Bindings bindings) = 
     //acons(instantiateRascalTypeParams(a,bindings), /*name,*/ [<fn, instantiateRascalTypeParams(ft,bindings)> | <fn, ft> <- fields], [<fn, instantiateRascalTypeParams(ft,bindings), de> | <fn, ft, de> <- kwFields], alabel=consName);
     acons(instantiateRascalTypeParams(a,bindings), /*name,*/ [instantiateRascalTypeParams(ft,bindings) | ft <- fields], [<instantiateRascalTypeParams(ft,bindings), de> | <ft, de> <- kwFields], alabel=consName);
