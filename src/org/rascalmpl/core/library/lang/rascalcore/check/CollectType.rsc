@@ -101,6 +101,57 @@ public list[&T] dup(list[&T] lst) {
   }
 }
 
+// ---- role modifiers
+void collect(current:(Type)`syntax[<Type t>]`, Collector c){
+   collect(t, c);
+
+   try {
+        c.fact(current, amodifyTo(c.getType(targs[0]), contextFreeSyntax()));
+   } catch TypeUnavailable():{
+        c.calculate("role modifier", current, targs, AType(Solver s){ return amodifyTo(c.getType(targs[0]), syntaxRole()); });
+   }
+}
+
+void collect(current:(Type)`data[<Type t>]`, Collector c){
+   collect(t, c);
+
+   try {
+        c.fact(current, amodifyTo(c.getType(targs[0]), dataSyntax()));
+   } catch TypeUnavailable():{
+        c.calculate("role modifier", current, targs, AType(Solver s){ return amodifyTo(c.getType(targs[0]), dataRole()); });
+   }
+}
+
+void collect(current:(Type)`lexical[<Type t>]`, Collector c){
+   collect(t, c);
+
+   try {
+        c.fact(current, amodifyTo(c.getType(targs[0]), lexicalSyntax()));
+   } catch TypeUnavailable():{
+        c.calculate("role modifier", current, targs, AType(Solver s){ return amodifyTo(c.getType(targs[0]), lexicalRole()); });
+   }
+}
+
+void collect(current:(Type)`layout[<Type t>]`, Collector c){
+   collect(t, c);
+
+   try {
+        c.fact(current, amodifyTo(c.getType(targs[0]), layoutSyntax()));
+   } catch TypeUnavailable():{
+        c.calculate("role modifier", current, targs, AType(Solver s){ return amodifyTo(c.getType(targs[0]), layoutRole()); });
+   }
+}
+
+void collect(current:(Type)`keyword[<Type t>]`, Collector c){
+   collect(t, c);
+
+   try {
+        c.fact(current, amodifyTo(c.getType(targs[0]), keywordSyntax()));
+   } catch TypeUnavailable():{
+        c.calculate("role modifier", current, targs, AType(Solver s){ return amodifyTo(c.getType(targs[0]), keywordSyntax()); });
+   }
+}
+
 // ---- list
 
 void collect(current:(Type)`list [ < {TypeArg ","}+ tas > ]`, Collector c){
