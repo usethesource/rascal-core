@@ -48,6 +48,7 @@ data AType (str alabel = "")
      
      | anode(list[AType] fields)
      | aadt(str adtName, list[AType] parameters, SyntaxRole syntaxRole)
+     | amodifyTo(AType atype, SyntaxRole syntaxRole)
      | acons(AType adt, list[AType] fields, list[Keyword] kwFields)
      | aprod(AProduction production)
      
@@ -459,6 +460,11 @@ public AGrammar compose(AGrammar g1, AGrammar g2) {
   return grammar(g1.starts, reduced_rules);
 }    
 
+@synopsis{Semantics of syntax role modifiers}
+// with nested modification the outermost (last applied) role wins
+AType amodifyTo(amodifyTo(t, _), SyntaxRole to) = amodifyTo(t, to);
 
+// syntax role modification preserves the name and the parameters
+AType amodifyTo(aadt(name, ps, _), SyntaxRole to) = aadt(name, ps, to);
 
 
