@@ -180,6 +180,11 @@ bool asubtype(achar(int c), \achar-class(list[ACharRange] ranges)) {
 }
 bool asubtype(l:\achar-class(list[ACharRange] _), achar(int c)) = l == \achar-class([arange(c,c)]);
 
+// amodifyTo (presumes normalizing rewrite rules have been applied from ATypeBase)
+bool asubtype(amodifyTo(x, role), amodifyTo(y, role)) = amodifyTo(x, y);
+bool asubtype(amodifyTo(l, rx), r:aadt(_, rx))        = asubtype(l, r);
+bool asubtype(l:aadt(_, _, rx), amodifyTo(r, rx))     = asubtype(l, r);
+
 // Utilities
 
 bool asubtype(atypeList(list[AType] l), atypeList(list[AType] r)) = asubtype(l, r);
