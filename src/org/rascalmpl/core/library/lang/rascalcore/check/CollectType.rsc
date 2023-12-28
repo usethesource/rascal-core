@@ -12,6 +12,7 @@
 module lang::rascalcore::check::CollectType
 
 extend lang::rascalcore::check::ATypeInstantiation;
+extend lang::rascalcore::check::CheckerCommon;
 
 import lang::rascal::\syntax::Rascal;
 import lang::rascalcore::grammar::definition::Symbols;
@@ -19,7 +20,6 @@ import lang::rascalcore::grammar::definition::Characters;
 import lang::rascalcore::grammar::definition::Literals;
 import lang::rascalcore::check::ScopeInfo;
 
-import IO;
 import List;
 import Node;
 import Set;
