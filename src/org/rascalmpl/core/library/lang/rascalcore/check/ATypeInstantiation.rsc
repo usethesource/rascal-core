@@ -114,7 +114,22 @@ public Bindings matchRascalTypeParams0(AType r, AType s, Bindings b) {
         for (idx <- index(rparams)) b = matchRascalTypeParams0(rparams[idx], sparams[idx], b);
         return b;
     }
-            
+
+    // parametrized role modifiers match ADTs with the same syntax role!
+    if (amodifyTo(aparameter(n,_), sr) := r && aadt(_,_,sr) := s) {
+        b[n] = s;
+        return b;
+    }
+
+    // two parametrized role modifiers can match if their parameters can match and they have the same role
+    if (amodifyTo(t1:aparameter(_,_), sr) := r && amodifyTo(t2:aparameter(_,_), sr) := s) {
+        b = matchRascalTypeParams0(t1, t2, b);
+        return b;
+    }
+
+    // nested amodifyTo's are rewritten, also if applied to aadt's they are rewritten.
+    // all the other amodifyTo applications do not match anything because they don't have semantics (yet)
+
     // For constructors, match when the constructor name, ADT name, and arity are the same, then we can check params
     if ( isConstructorType(r) && isConstructorType(s) && getADTName(r) == getADTName(s)) {
         b = matchRascalTypeParams0(getConstructorArgumentTypesAsTuple(r), getConstructorArgumentTypesAsTuple(s), b);
