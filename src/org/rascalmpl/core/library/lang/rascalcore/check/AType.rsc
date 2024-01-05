@@ -376,6 +376,10 @@ AType addADTLabel(AType a1, AType a2, AType adt){
   return adt;
 }
 
+// JV: TODO remove acons as a type. We don't have it fully working in the runtime-type system either and
+// it has a confusing relationship with afunc. The type of a constructor function's name. ConstructorType
+// in vallang should also be removed from the type hierarchy and simply become `Constructor` or `Production`.
+// should be a function type: `ADT (parameters, keywordparams)`
 //AType alub(acons(AType la, list[AType] _,  list[Keyword] _), acons(AType ra, list[AType] _, list[Keyword] _)) = alub(la,ra);
 AType alub(acons(AType lr, list[AType] lp, list[Keyword] lkw), acons(AType rr, list[AType] rp, list[Keyword] rkw)) {
     if(/*lr == rr && */size(lp) == size(rp)){
@@ -412,6 +416,38 @@ AType alub(AType l, aparameter(str _, AType bound)) = alub(l, bound) when aparam
 
 AType alub(areified(AType l), areified(AType r)) = areified(alub(l,r));
 AType alub(areified(AType l), anode(_)) = anode([]);
+
+// note that lub on modifyTo works under assumptions of normals forms affected by rewrite rules on modifyTo(..) terms
+AType alub(amodifyTo(AType l, SyntaxRole sr), amodifyTo(AType r, sr)) 
+    = amodifyTo(alub(l, r), sr);
+
+AType alub(amodifyTo(AType l, SyntaxRole sr), amodifyTo(AType r, sr)) 
+    = amodifyTo(alub(l, r), sr);
+
+AType alub(amodifyTo(AType l, contextFreeSyntax()), amodifyTo(AType r, dataSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, contextFreeSyntax()), amodifyTo(AType r, lexicalSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, contextFreeSyntax()), amodifyTo(AType r, keywordSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, contextFreeSyntax()), amodifyTo(AType r, layoutSyntax()))  = aadt("Tree", [], dataSyntax());
+
+AType alub(amodifyTo(AType l, dataSyntax()), amodifyTo(AType r, contextFreeSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, dataSyntax()), amodifyTo(AType r, lexicalSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, dataSyntax()), amodifyTo(AType r, keywordSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, dataSyntax()), amodifyTo(AType r, layoutSyntax()))  = anode([]);
+
+AType alub(amodifyTo(AType l, lexicalSyntax()), amodifyTo(AType r, dataSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, lexicalSyntax()), amodifyTo(AType r, contextFreeSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, lexicalSyntax()), amodifyTo(AType r, keywordSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, lexicalSyntax()), amodifyTo(AType r, layoutSyntax()))  = aadt("Tree", [], dataSyntax());
+
+AType alub(amodifyTo(AType l, keywordSyntax()), amodifyTo(AType r, dataSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, keywordSyntax()), amodifyTo(AType r, contextFreeSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, keywordSyntax()), amodifyTo(AType r, lexicalSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, keywordSyntax()), amodifyTo(AType r, layoutSyntax()))  = aadt("Tree", [], dataSyntax());
+
+AType alub(amodifyTo(AType l, layoutSyntax()), amodifyTo(AType r, dataSyntax())) = anode([]);
+AType alub(amodifyTo(AType l, layoutSyntax()), amodifyTo(AType r, contextFreeSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, layoutSyntax()), amodifyTo(AType r, lexicalSyntax())) = aadt("Tree", [], dataSyntax());
+AType alub(amodifyTo(AType l, layoutSyntax()), amodifyTo(AType r, keywordSyntax()))  = aadt("Tree", [], dataSyntax());
 
 AType alub(l:\achar-class(_), r:\achar-class(_)) = union(l, r);
 AType alub(l:aadt("Tree", _, _), \achar-class(_)) = l;

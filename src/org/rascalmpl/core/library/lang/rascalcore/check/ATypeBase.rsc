@@ -447,4 +447,3 @@ AType amodifyTo(amodifyTo(t, _), SyntaxRole to) = amodifyTo(t, to);
 // syntax role modification preserves the name and the parameters
 AType amodifyTo(aadt(name, ps, _), SyntaxRole to) = aadt(name, ps, to);
 
-
