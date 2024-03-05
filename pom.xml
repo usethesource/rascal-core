@@ -158,24 +158,24 @@
                     </dependency>
                 </dependencies>
             </plugin>
-            <!--<plugin> this is to generate java code for all the tests and run them
+            <plugin>
                 <groupId>org.rascalmpl</groupId>
                 <artifactId>rascal-maven-plugin</artifactId>
                 <version>0.22.0</version>
-                <configuration>
+                <!--    <configuration>
                     <generated>${project.build.directory}/generated-test-sources</generated>
                     <mainModule>GenerateTestSources</mainModule>
-                </configuration>
+                </configuration> -->
                 <executions>
-                    <execution>
+                    <!--<execution>
                         <id>it-compile</id>
                         <phase>generate-test-sources</phase>
                         <goals>
                             <goal>generate-sources</goal>
                         </goals>
-                    </execution>
+                    </execution> -->
                 </executions>
-            </plugin> -->
+            </plugin> 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
