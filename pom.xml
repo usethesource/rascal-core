@@ -161,7 +161,7 @@
             <!--<plugin> this is to generate java code for all the tests and run them
                 <groupId>org.rascalmpl</groupId>
                 <artifactId>rascal-maven-plugin</artifactId>
-                <version>0.14.6</version>
+                <version>0.22.0</version>
                 <configuration>
                     <generated>${project.build.directory}/generated-test-sources</generated>
                     <mainModule>GenerateTestSources</mainModule>
