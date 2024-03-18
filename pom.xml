@@ -9,13 +9,13 @@
 
     <groupId>org.rascalmpl</groupId>
     <artifactId>rascal-core</artifactId>
-    <version>0.8.5-BOOT2-SNAPSHOT</version>
+    <version>0.8.6-BOOT1</version>
 
     <packaging>jar</packaging>
 
     <scm>
         <developerConnection>scm:git:ssh://git@github.com/usethesource/rascal-core.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.8.6-BOOT1</tag>
     </scm>
 
     <!-- dependency resolution configuration (usethesource) -->
