@@ -12,18 +12,12 @@ import lang::rascal::\syntax::Rascal;
 public /*const*/ str patternContainer = "patternContainer";
 public /*const*/ str patternNames     = "patternNames";
 
-
 public /*const*/ str currentAdt = "currentAdt";       // used to mark data declarations
 public /*const*/ str inAlternative = "inAlternative"; // used to mark top-level alternative in syntax declaration
 public /*const*/ str typeContainer = "typeContainer";
 public /*const*/ str inConcreteLiteral = "concreteLiteral"; // used to mark that we are inside a concrete literal
 
-public /*const*/ str inFormals = "inFormals";
-
 // Some utilities on patterns
-
-set[str] getAllNames(Pattern p)
-    = { "<name>" | /(Pattern) `<Type _><Name name>` := p, !isWildCard("<name>") } + { "<name>" | /QualifiedName name := p, !isWildCard("<name>") };
     
 void beginPatternScope(str name, Collector c){
     c.clearStack(patternNames);
@@ -54,11 +48,85 @@ bool isTopLevelParameter(Collector c){
 
 data VisitOrSwitchInfo = visitOrSwitchInfo(Expression expression, bool isVisit);
 
-data ReturnInfo
-    = returnInfo(Type returnType)
+// Information needed for checking return statement
+data SignatureInfo
+    = signatureInfo(Type returnType)
     ;
 
-bool insideFormals(Solver s){
-    return !isEmpty(s.getStack(inFormals));
+// Determine how type parameters (TypeVar in Rascal grammar) will be treated:
+// defineOrReuseTypeParameters:
+//  - define type parameters unless they are already defined (= reused in same scope)
+//  - used for parameter lists
+// useTypeParameters:
+// - all type parameters should have been declared and each occurrence is treated as a use.
+// - used for return types of functions
+// useBoundedTypeParameters:
+// - given a table of computed bounds, turn each use in a use with the given bound.
+// - used for the body of functions
+//
+//Note neasting of types, e.g., a function type that is part of a return type.
+
+data TypeParamHandler
+    = useTP(bool closed)
+    | defineOrReuseTP(bool closed)
+    | useBoundedTP(rel[str, Type] tpbounds)
+    ;
+    
+private /*const*/ str key_TypeParameterHandling = "typeParameterHandling";
+
+void beginDefineOrReuseTypeParameters(Collector c, bool closed=false){
+    c.push(key_TypeParameterHandling, defineOrReuseTP(closed));
+}
+
+void endDefineOrReuseTypeParameters(Collector c){
+    handler = c.pop(key_TypeParameterHandling);
+    if(defineOrReuseTP(_) !:= handler){
+        throw "beginDefineOrReuseTypeParameters/endDefineOrReuseTypeParameters not properly nested";
+    }
+}
+
+tuple[bool yes, bool closed] defineOrReuseTypeParameters(Collector c){
+    stck = c.getStack(key_TypeParameterHandling);
+    if([defineOrReuseTP(bool closed), *_] := stck){
+        return <true, closed>;
+    }
+    return <false, false>;
+}
+
+void beginUseTypeParameters(Collector c, bool closed = false){
+    if(debugTP)println("beginUseTypeParameters, closed=<closed>, <c.getStack(key_TypeParameterHandling)>");
+    c.push(key_TypeParameterHandling, useTP(closed));
+}
+
+void endUseTypeParameters(Collector c){
+    handler = c.pop(key_TypeParameterHandling);
+    if(useTP(_) !:= handler)
+        throw "beginUseTypeParameters/endUseTypeParameters not properly nested";
+}
+
+tuple[bool yes, bool closed] useTypeParameters(Collector c){
+    stck = c.getStack(key_TypeParameterHandling);
+    if([useTP(bool closed), *_] := stck){
+        return <true, closed>;
+    }
+    return <false, false>;
+}
+
+void beginUseBoundedTypeParameters(rel[str, Type] tpbounds, Collector c){
+    c.push(key_TypeParameterHandling, useBoundedTP(tpbounds));
+}
+
+tuple[bool yes, rel[str, Type] tpbounds] useBoundedTypeParameters(Collector c){
+    stck = c.getStack(key_TypeParameterHandling);
+    if([useBoundedTP(rel[str, Type] tpbounds), *_] := stck){
+        return <true, tpbounds>;
+    }
+    return <false, {}>;
+}
+
+void endUseBoundedTypeParameters(Collector c){
+    handler = c.pop(key_TypeParameterHandling);
+    if(useBoundedTP(_) !:= handler)
+        throw "beginUseBoundedTypeParameters/endUseBoundedTypeParameters not properly nested";
 }
  

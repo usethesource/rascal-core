@@ -9,6 +9,7 @@ extend lang::rascalcore::check::ATypeInstantiation;
 extend lang::rascalcore::check::BuiltinFields;
 extend lang::rascalcore::check::ScopeInfo;
 
+import lang::rascalcore::check::ATypeUtils;
 import lang::rascal::\syntax::Rascal;
 
 //import IO;
@@ -59,18 +60,22 @@ void(Solver) makeVarInitRequirement(Variable var)
             initialType = s.getType(var.initial);
             varType = s.getType(var.name);
             checkNonVoid(var, varType, s, "Variable declaration");
-            try   bindings = matchRascalTypeParams(initialType, varType, bindings);
+            isuffix = "i";
+            vsuffix = "v";
+            initialTypeU = makeUniqueTypeParams(initialType, isuffix);
+            varTypeU = makeUniqueTypeParams(varType, vsuffix);
+            try   bindings = unifyRascalTypeParams(initialTypeU, varTypeU, bindings);
             catch invalidMatch(str reason):
                   s.report(error(var.initial, reason));
             
-            initialType = instantiateRascalTypeParameters(var, initialType, bindings, s);  
-            if(s.isFullyInstantiated(initialType)){
-                s.requireSubType(initialType, varType, error(var, "Initialization of %q should be subtype of %t, found %t", "<var.name>", var.name, initialType));
+            initialTypeU = instantiateRascalTypeParameters(var, initialTypeU, bindings, s);  
+            if(s.isFullyInstantiated(initialTypeU)){
+                s.requireSubType(initialTypeU, varTypeU, error(var, "Initialization of %q should be subtype of %t, found %t", "<var.name>", var.name, deUnique(initialTypeU)));
             } else if(!s.unify(initialType, varType)){
-                s.requireSubType(initialType, varType, error(var, "Initialization of %q should be subtype of %t, found %t", "<var.name>", var.name, initialType));
+                s.requireSubType(initialTypeU, varTypeU, error(var, "Initialization of %q should be subtype of %t, found %t", "<var.name>", var.name, deUnique(initialTypeU)));
             }
-            checkNonVoid(var.initial, initialType, s, "Variable initialization");
-            s.fact(var, varType);
+            checkNonVoid(var.initial, initialTypeU, s, "Variable initialization");
+            s.fact(var, deUnique(varType));
        };
        
 void(Solver) makeNonVoidRequirement(Tree t, str msg)
@@ -227,32 +232,32 @@ AType computeADTType(Tree current, str adtName, loc scope, AType retType, list[A
 
 AType computeADTReturnType(Tree current, str adtName, loc scope, list[AType] formalTypes, list[AType] actualTypes, list[Keyword] kwFormals, keywordArguments, list[bool] identicalFormals, list[bool] dontCare, bool isExpression, Solver s){
     Bindings bindings = ();
+    fsuffix = "f";
+    asuffix = "a";
     index_formals = index(formalTypes);
+    formalTypesU = makeUniqueTypeParams(formalTypes, fsuffix);
+    actualTypesU = makeUniqueTypeParams(actualTypes, asuffix);
     for(int i <- index_formals, !dontCare[i]){
-        try   bindings = matchRascalTypeParams(formalTypes[i], actualTypes[i], bindings);
+        try   bindings = matchRascalTypeParams(formalTypesU[i], actualTypesU[i], bindings);
         catch invalidMatch(str reason): 
               s.report(error(current, reason));   
     }
-    iformals = formalTypes;
+    iformalsU = formalTypesU;
     if(!isEmpty(bindings)){
-        try   iformals = [instantiateRascalTypeParameters(current, formalTypes[i], bindings, s) | int i <- index_formals]; // changed
+        try   iformalsU = [instantiateRascalTypeParameters(current, formalTypesU[i], bindings, s) | int i <- index_formals]; // changed
         catch invalidInstantiation(str msg):
               s.report(error(current, msg));
     }
     for(int i <- index_formals, !dontCare[i]){
-        ai = actualTypes[i];
-       //println("<i>: <ai>");
-        if(!s.isFullyInstantiated(ai) && isExpression){
+        aiU = actualTypesU[i];
+        if(!s.isFullyInstantiated(aiU) && isExpression){
             if(identicalFormals[i]){
-               s.requireUnify(ai, iformals[i], error(current, "Cannot unify %t with %t", ai, iformals[i]));
-               ai = s.instantiate(ai);
-               //println("instantiated <actuals[i]>: <ai>");
+               s.requireUnify(aiU, iformalsU[i], error(current, "Cannot unify %t with %t", ai, iformals[i]));
+               aiU = s.instantiate(aiU);
             } else
                 continue;
         }
-        //println("comparable?: <ai>, <iformals[i]>");
-        //actuals_i = (list[Expression] actualsExp := actuals) ? actualsExp[i] : ((list[Pattern] actualsPat := actuals) ? actualsPat[i] : current);
-        s.requireComparable(ai, iformals[i], error(current, "Argument %v should have type %t, found %t", i, formalTypes[i], ai));
+        s.requireComparable(aiU, iformalsU[i], error(current, "Argument %v should have type %t, found %t", i, formalTypesU[i], aiU));
     }
     adtType = s.getTypeInScopeFromName(adtName, scope, dataOrSyntaxRoles);
     
@@ -277,11 +282,13 @@ AType computeADTReturnType(Tree current, str adtName, loc scope, list[AType] for
         parameters = getADTTypeParameters(adtType);
     }
     for(p <- parameters){
-        if(!bindings[p.pname]?) bindings[p.pname] = avoid();
+        if(!bindings[p.pname]?){
+            bindings[p.pname] = avalue(); // was: avoid()
+        }
     }
     if(!isEmpty(bindings)){
         try {
-            ctype_old = s.getType(current);
+            ctype_old = makeUniqueTypeParams(s.getType(current), fsuffix);
             ctype_new = instantiateRascalTypeParameters(current, ctype_old, bindings, s); // changed
             if(ctype_new != ctype_old){
                 s.specializedFact(current, ctype_new);
@@ -289,11 +296,16 @@ AType computeADTReturnType(Tree current, str adtName, loc scope, list[AType] for
         } catch TypeUnavailable(): /* ignore */ ;
           catch invalidInstantiation(str _msg): /* nothing to instantiate */ ;
         try {
-            return instantiateRascalTypeParameters(current, s.getTypeInScopeFromName(adtName, scope, dataOrSyntaxRoles), bindings, s); // changed
+            res = deUnique(instantiateRascalTypeParameters(current, makeUniqueTypeParams(s.getTypeInScopeFromName(adtName, scope, dataOrSyntaxRoles), fsuffix), bindings, s));
+            res = visit(res){ case ap:aparameter(_,_) => unset(ap, "closed") };
+            return res;
         } catch invalidInstantiation(str msg):
                s.report(error(current, msg));
     }
-   
+    try {
+        return deUnique(instantiateRascalTypeParameters(current, makeUniqueTypeParams(adtType, fsuffix), bindings, s));
+    } catch invalidInstantiation(str msg):
+        s.report(error(current, msg));
     return adtType;
 }
 
@@ -309,14 +321,14 @@ void checkExpressionKwArgs(list[Keyword] kwFormals, (KeywordArguments[Expression
            ft = k.fieldType;
            fn = ft.alabel;
            if(kwName == fn){
-              ift = ft;
+              ift = makeUniqueTypeParams(ft, "f");
               if(!isEmpty(bindings)){
-                  try   ift = instantiateRascalTypeParameters(kwa, ft, bindings, s); // changed
+                  try   ift = instantiateRascalTypeParameters(kwa, ift, bindings, s); // changed
                   catch invalidInstantiation(str msg):
                         s.report(error(kwa, msg));
               }
               kwType = s.getType(kwa.expression);
-              s.requireComparable(kwType, ift, error(kwa, "Keyword argument %q has type %t, expected %t", kwName, kwType, ift));
+              s.requireComparable(kwType, deUnique(ift), error(kwa, "Keyword argument %q has type %t, expected %t", kwName, kwType, deUnique(ift)));
               continue next_arg;
            } 
         }
@@ -644,31 +656,66 @@ AType computeSliceType(Tree current, AType base, AType first, AType step, AType 
     return avalue();
 }
 
-@doc{Calculate the arith type for the numeric types, taking account of coercions.}
-public AType numericArithTypes(AType l, AType r) {
-    if (isIntAType(l) && isIntAType(r)) return aint();
-    if (isIntAType(l) && isRatAType(r)) return arat();
-    if (isIntAType(l) && isRealAType(r)) return areal();
-    if (isIntAType(l) && isNumAType(r)) return anum();
+bool isSameTypeParameter(aparameter(str n1, AType b1), aparameter(str n2, AType b2))
+    = n1 == n2 && b1 == b2;
+    
+default bool isSameTypeParameter(AType t1, AType t2) = false;
 
-    if (isRatAType(l) && isIntAType(r)) return arat();
-    if (isRatAType(l) && isRatAType(r)) return arat();
-    if (isRatAType(l) && isRealAType(r)) return areal();
-    if (isRatAType(l) && isNumAType(r)) return anum();
+@synopsis{Coerce acts like alub but for arithmetic opererand pairs that feature coercions}
+@description{
+The coercions in this dispatch table make it so that:
+* int escalates to rat, in presence of a rat
+* rat escalates to real, in the presence of a real
+* int also escalates to real, in the presence of a real
 
-    if (isRealAType(l) && isIntAType(r)) return areal();
-    if (isRealAType(l) && isRatAType(r)) return areal();
-    if (isRealAType(l) && isRealAType(r)) return areal();
-    if (isRealAType(l) && isNumAType(r)) return anum();
-
-    if (isNumAType(l) && isIntAType(r)) return anum();
-    if (isNumAType(l) && isRatAType(r)) return anum();
-    if (isNumAType(l) && isRealAType(r)) return anum();
-    if (isNumAType(l) && isNumAType(r)) return anum();
-
-    throw rascalCheckerInternalError("Only callable for numeric types, given <l> and <r>");
+Furthermore all arithmetic operators `op` in {`*`, `+`, `-`, `/`} are "type preserving":
+* int op int   => int
+* rat op rat   => rat
+* real op real => real
+* &T op &T     => &T, given that &T <: num
+* And so unequal type parameters, default to `num`: &T <: num op &Y <: num => num
+    
+Finally, the escalation mechanism through coercions also works in the bounds of type parameters:
+* &T <: rat op &U <: int => rat
+That is by forwarding the coercion to the bounds of type parameters if the type names are unequal.
 }
+AType coerce(aint(), arat())     = arat();  // int becomes rat
+AType coerce(arat(), aint())     = arat();  // int becomes rat
+AType coerce(aint(), areal())    = areal(); // int becomes real
+AType coerce(areal(), aint())    = areal(); // int becomes real
+AType coerce(arat(), areal())    = areal(); // rat becomes real
+AType coerce(areal(), arat())    = areal(); // rat becomes real
+AType coerce(anum(), AType r)    = anum();  // everything becomes anum
+AType coerce(AType l, anum())    = anum();  // everything becomes anum
+default AType coerce(AType t, t) = t;       // type preservation = closed algebras for int, rat and real
 
+// Type preservation also holds if we don't know which type it is. This rule makes
+// sure the parameter is propagated over the operator application expression.
+// Since the operator always implements coercion at run-time, the bounds do not 
+// immediately shrink to the GLB, but rather to the coerced bounds. 
+AType coerce(aparameter(str name, AType boundL, closed=false), aparameter(name, AType boundR, closed=false)) 
+    = aparameter(name, coerce(boundL,boundR)/*, closed=false*/); 
+
+AType coerce(aparameter(str name, AType boundL, closed=true), aparameter(name, AType boundR, closed=true)) 
+    = aparameter(name, coerce(boundL, boundR), closed=true); 
+
+// Coercion also applies to type parameter bounds, but we do not get to keep
+// open parameters if the names are different.
+// must be `default` to avoid overlap with the equal-type-names case.
+default AType coerce(aparameter(str _, AType bound, closed=false), AType r) = coerce(bound, r);
+default AType coerce(AType l, aparameter(str _, AType bound, closed=false)) = coerce(l, bound);
+
+// Here we have a closed parameter type, we do not know what it is but it is anything below the bound, 
+// We can defer to the coercion of the bounds again, because the run-time will guarantee such
+// coercion always. The cases for open parameters are the same, but we leave this here
+// for the sake of clarity and completeness.
+default AType coerce(aparameter(str _, AType bound, closed=true), AType r) = coerce(bound, r);
+default AType coerce(AType l, aparameter(str _, AType bound, closed=true)) = coerce(l, bound);
+
+@synopsis{Calculate the arith type for the numeric types, taking account of coercions.}
+public AType numericArithTypes(AType l, AType r) {
+    return coerce(l, r);
+}
 
 AType computeAdditionType(Tree current, AType t1, AType t2, Solver s) 
     = binaryOp("addition", _computeAdditionType, current, t1, t2, s);
@@ -677,18 +724,28 @@ private AType _computeAdditionType(Tree current, AType t1, AType t2, Solver s) {
     if(isNumericType(t1) && isNumericType(t2)) return numericArithTypes(t1, t2);
     
     if (isStrAType(t1) && isStrAType(t2))
-        return astr();
+        return isSameTypeParameter(t1, t2) ? t1 : astr();
+
+    // TODO: what is `true + true`? probably should not exist here
     if (isBoolAType(t1) && isBoolAType(t2))
-        return abool();
+        return isSameTypeParameter(t1, t2) ? t1 : abool();
+
+    // TODO: what is |unknown:///| + |unknown:///|? probably should not exist here
     if (isLocAType(t1) && isLocAType(t2))
-        return aloc();
+        return isSameTypeParameter(t1, t2) ? t1 : aloc();
+
+    // TODO: this does not make sense to me. The returning type is
+    // always a `loc`, which is more specific than the &T unless it were `void`.
+    // why are we propagating the &T here?    
     if (isLocAType(t1) && isStrAType(t2))
-        return aloc();
+        return isTypeParameter(t1) ? t1 : aloc();
         
+    // TODO what is `now() + now()`? probably should not exist here.    
     if(isDateTimeAType(t1) && isDateTimeAType(t2))
-        return adatetime();
+        return isSameTypeParameter(t1, t2) ? t1 : adatetime();
         
-     if (isTupleAType(t1) && isTupleAType(t2)) {
+    // TODO: This re-encodes alub all over again, but maybe subtly different. 
+    if (isTupleAType(t1) && isTupleAType(t2)) {
          if (tupleHasFieldNames(t1) && tupleHasFieldNames(t2)) {
             tflds1 = getTupleFields(t1);
             tflds2 = getTupleFields(t2);
@@ -704,7 +761,9 @@ private AType _computeAdditionType(Tree current, AType t1, AType t2, Solver s) {
             return makeTupleType(getTupleFieldTypes(t1) + getTupleFieldTypes(t2));
          }
      } 
-       
+
+    // TODO: this is what all the cases should look like, IMHO, the addition always
+    // produces the lub of the types.   
     if (isListAType(t1) && isListAType(t2))
         return s.lub(t1,t2);
     if (isSetAType(t1) && isSetAType(t2))
@@ -733,11 +792,19 @@ private AType _computeAdditionType(Tree current, AType t1, AType t2, Solver s) {
     if (isBagAType(t1))
         return abag(s.lub(getBagElementType(t1),t2));
     
-    // TODO: Can we also add together constructor types?
+    // TODO: Can we also add together constructor types? 
+    // JV: constructor functions can be added like normal functions can.
+    // That's why the interpreter gives function types to constructor functions and
+    // not something special. Functions are constructor functions are completely interchangeable
+    // in the run-time, so they should not have different type kinds.
+
     // TODO: cloc is arbitrary, can we do better?
     cloc = getLoc(current);
+    // TODO: this is a re-implementation of `alub` don't know if it's exactly the same:
     if (isFunctionAType(t1)){
-        if(isFunctionAType(t2))
+        if (isFunctionAType(t2))
+        // TODO: in the interpreter we simply use the lub of the two function types. What is the use of the
+        // overloaded type if it can never be a result of a type computation?
             return overloadedAType({<cloc, functionId(), t1>, <cloc, functionId(), t2>});
         else if(overloadedAType(rel[loc, IdRole, AType] overloads) := t2){
             return overloadedAType(overloads + <cloc, functionId(), t1>);
@@ -761,8 +828,10 @@ private AType _computeSubtractionType(Tree current, AType t1, AType t2, Solver s
     if(isNumericType(t1) && isNumericType(t2)){
         return numericArithTypes(t1, t2);
     }
-    if(isDateTimeAType(t1) && isDateTimeAType(t2)){
-        return adatetime();
+    if(isDateTimeAType(t1) && isDateTimeAType(t2)) {
+        // TODO JV: why are we promoting the type parameter here?
+        // BTW, the difference between two DateTime's is _NOT_ a datetime but an integer or something that represents a Duration.
+        return isSameTypeParameter(t1, t2) ? t1 : adatetime();
     }
     if(isListAType(t1) && isListAType(t2)){
         s.requireComparable(getListElementType(t1), getListElementType(t2), error(current, "%v of type %t could never contain elements of second %v type %t", 
@@ -770,6 +839,8 @@ private AType _computeSubtractionType(Tree current, AType t1, AType t2, Solver s
        return t1;
     }
     
+    // TODO JV: this is weird, what if it's a list of lists and you want to subtract something? Then the previous case already
+    // complains about incomparability...
     if(isListAType(t1)){
         s.requireComparable(getListElementType(t1), t2, error(current, "%v of type %t could never contain elements of type %t", isListRelAType(t1) ? "List Relation" : "List", t1, t2));
         return t1;
@@ -778,6 +849,8 @@ private AType _computeSubtractionType(Tree current, AType t1, AType t2, Solver s
         s.requireComparable(getSetElementType(t1), getSetElementType(t2), error(current, "%v of type %t could never contain elements of second %v type %t", isRelAType(t1) ? "Relation" : "Set", t1,isListRelAType(t2) ? "Relation" : "Set", t2));
         return t1;
     }
+
+    // TODO JV: same issue as with list
     if(isSetAType(t1)){
         s.requireComparable(getSetElementType(t1), t2, error(current, "%v of type %t could never contain elements of type %t", isRelAType(t1) ? "Relation" : "Set", t1, t2));
         return t1;
@@ -800,6 +873,7 @@ private AType _computeProductType(Tree current, AType t1, AType t2, Solver s){
     
     if (isListAType(t1) && isListAType(t2))
         return makeListType(atuple(atypeList([getListElementType(t1),getListElementType(t2)])));
+    // TODO: JV is a rel not a set of tuples?
     if (isRelAType(t1) && isRelAType(t2))
         return arel(atypeList([getRelElementType(t1),getRelElementType(t2)]));
     if (isListRelAType(t1) && isListRelAType(t2))
@@ -831,15 +905,21 @@ private AType _computeIntersectionType(Tree current, AType t1, AType t2, Solver 
          ( isSetAType(t1) && isSetAType(t2) ) || 
          ( isMapAType(t1) && isMapAType(t2) ) )
     {
-        if (!comparable(t1,t2))
+        // TODO: JV maybe: warning: intersection of incomparable sets always produces the empty set. It's not strictly a static error.
+        // Another way is to use the glb and warn if the result is set[void], list[void] or map[void,void].
+        if (!comparable(t1,t2)) 
             s.report(error(current, "Types %t and %t are not comparable", t1, t2));
-            
+
+        // TODO JV: this re-encodes what `glb` also does: if t1 <: t2 then glb(t1,t2) == t2,
+        // except it does not take care of the bounds of type parameters.
+        // Let's rewrite this using glb.
         if (asubtype(t2, t1))
             return t2;
-            
+        // TODO See above: 
         if (asubtype(t1, t2))
             return t1;
-            
+
+        // TODO: This is also a partial re-implementation of glb    
         if (isListRelAType(t1)) return makeListRelType(makeVoidType(),makeVoidType());
         if (isListAType(t1)) return makeListType(makeVoidType());
         if (isRelAType(t1)) return makeRelType(makeVoidType(), makeVoidType());
@@ -904,15 +984,7 @@ private AType getPatternType0(current: (Pattern) `<QualifiedName name>`, AType s
     base = prettyPrintBaseName(name);
     if(!isWildCard(base)){
        nameType = s.getType(name);
-       if(!s.isFullyInstantiated(nameType) || !s.isFullyInstantiated(subjectType)){
-          s.requireUnify(nameType, subjectType, error(current, "Type of pattern could not be computed"));
-          s.fact(name, nameType); // <====
-          nameType = s.instantiate(nameType);
-          s.fact(name, nameType);
-          subjectType = s.instantiate(subjectType);
-          //clearBindings();
-       }
-       s.requireComparable(nameType, subjectType, error(current, "Pattern should be comparable with %t, found %t", subjectType, nameType));
+       nameType = instantiateAndCompare(current, nameType, subjectType, s);
        return nameType[alabel=unescape("<name>")];
     } else
        return subjectType[alabel=unescape("<name>")];
@@ -966,23 +1038,43 @@ private AType getSplicePatternType(Pattern current, Pattern argument,  AType sub
            } else if(isSetAType(inameType)){
                 elmType = getSetElementType(inameType);
            } else {
-            s.report(error(argument, "List or set type expected, found %t", inameType));
+                s.report(error(argument, "List or set type expected, found %t", inameType));
            }
              
-           if(!s.isFullyInstantiated(elmType) || !s.isFullyInstantiated(subjectType)){
-              s.requireUnify(elmType, subjectType, error(current, "Type of pattern could not be computed"));
-              elmType = s.instantiate(elmType);
-              //s.fact(argName, nameElementType);//<<
-              s.fact(current, elmType); // <<
-              subjectType = s.instantiate(elmType);
-           }
-           s.requireComparable(elmType, subjectType, error(current, "Pattern should be comparable with %t, found %t", subjectType, elmType));
-           return elmType;
+           return instantiateAndCompare(current, elmType, subjectType, s);
         }
     } else {
         s.report(error(current, "Unsupported construct in splice pattern"));
         return subjectType;
     }
+}
+
+AType instantiateAndCompare(Tree current, AType patType, AType subjectType, Solver s){
+    if(!s.isFullyInstantiated(patType) || !s.isFullyInstantiated(subjectType)){
+      s.requireUnify(patType, subjectType, error(current, "Type of pattern could not be computed"));
+      s.fact(current, patType); // <====
+      patType = s.instantiate(patType);
+      s.fact(current, patType);
+      subjectType = s.instantiate(subjectType);
+   }
+  
+   bindings = ();
+   lsuffix = "l";
+   rsuffix = "r";
+   patTypeU = makeUniqueTypeParams(patType, lsuffix);
+   subjectTypeU = makeUniqueTypeParams(subjectType, rsuffix);
+   try   bindings = unifyRascalTypeParams(patTypeU, subjectTypeU, bindings);
+   catch invalidMatch(str reason):
+         s.report(error(current, reason));
+   if(!isEmpty(bindings)){
+    try   <patTypeU, subjectTypeU> = instantiateRascalTypeParameters(current, patTypeU, subjectTypeU, bindings, s);
+    catch invalidInstantiation(str msg):
+        s.report(error(current, msg));
+   }
+   patType = deUnique(patTypeU);
+   subjectType = deUnique(subjectTypeU);
+   s.requireComparable(patType, subjectType, error(current, "Pattern should be comparable with %t, found %t", subjectType, patTypeU));
+   return patType;
 }
 
 // ---- splicePlus pattern: +Pattern ------------------------------------------
@@ -1044,14 +1136,6 @@ private AType getPatternType0(current: (Pattern) `<Pattern expression> ( <{Patte
           texp = tp;
           s.fact(expression, tp);
        } else {
-        // TODO: assess whether this is needed
-          //if(insideFormals(s) && (size(overloads) > 1)){
-          //  if(any(tp <- bareArgTypes, !s.isFullyInstantiated(tp))){
-          //      defs = itemizeLocs(filteredOverloads<0>);
-          //      s.report(error(expression, "Constructor `%v` in formal parameter should be unique, found %t, defined at %v", "<expression>", expression, defs));
-          //      return avalue();
-          //  }
-          //}
          overloads = filteredOverloads;
          validReturnTypeOverloads = {};
          validOverloads = {};

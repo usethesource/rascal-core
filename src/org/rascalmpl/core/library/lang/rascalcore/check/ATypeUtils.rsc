@@ -8,6 +8,7 @@
 }
 @contributor{Jurgen J. Vinju - Jurgen.Vinju@cwi.nl - CWI}
 @contributor{Mark Hills - Mark.Hills@cwi.nl (CWI)}
+@contributor{Paul Klint - Paul.Klint@cwi.nl (CWI)}
 @contributor{Anastasia Izmaylova - Anastasia.Izmaylova@cwi.nl (CWI)}
 @bootstrapParser
 module lang::rascalcore::check::ATypeUtils
@@ -78,7 +79,9 @@ str prettyAType(t: acons(AType adt, /*str consName,*/
                  = "<prettyAType(adt)>::<t.alabel>(<intercalate(", ", ["<prettyAType(ft)><ft.alabel? ? " <ft.alabel>" : "">" | ft <- fields])><isEmpty(kwFields) ? "" : ", "><intercalate(",", ["<prettyAType(kw.fieldType)> <kw.fieldName>=..." | Keyword kw <- kwFields])>)";
 
 str prettyAType(amodule(str mname)) = "module <mname>";         
-str prettyAType(aparameter(str pn, AType t)) = avalue() := t ? "&<pn>" : "&<pn> \<: <prettyAType(t)>";
+str prettyAType(aparameter(str pn, AType t, closed=c)) =
+    ((avalue() := t) ? "&<pn>" : "&<pn> \<: <prettyAType(t)>") 
+    + (c ? "[closed]" : "[open]");
 str prettyAType(areified(AType t)) = "type[<prettyAType(t)>]";
 
 // utilities
@@ -838,8 +841,8 @@ list[AType] getListRelFields(AType t) {
 Determine if the given type is a tuple.
 }
 bool isTupleAType(aparameter(_,AType tvb)) = isTupleAType(tvb);
-bool isTupleAType(atuple(_)) = true;
-default bool isTupleAType(AType _) = false;
+bool isTupleAType(t:atuple(_)) { /*println("isTupleAType: <t> =\> true");*/ return true; }
+default bool isTupleAType(AType t) { /*println("isTupleAType: <t> =\> false");*/ return false; }
 
 @doc{Create a new tuple type, given the element types of the fields. Check any given labels for consistency.}
 AType makeTupleType(AType elementTypes...) {
@@ -890,6 +893,7 @@ list[AType] getTupleFieldTypes(AType t) {
 
 @doc{Get the fields of a tuple as a list.}
 list[AType] getTupleFields(AType t) {
+    //println("getTupleFields: <t>");
     if (atuple(atypeList(tas)) := unwrapAType(t)) return tas;
     throw rascalCheckerInternalError("Cannot get tuple fields from type <prettyAType(t)>"); 
 }

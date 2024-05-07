@@ -11,6 +11,7 @@ extend lang::rascalcore::check::CollectSyntaxDeclaration;
 extend lang::rascalcore::check::Fingerprint;
 extend lang::rascalcore::check::PathAnalysis;
 
+//import lang::rascalcore::check::ScopeInfo;
 import lang::rascalcore::check::CollectOperators;
 import lang::rascalcore::check::CollectExpression;
 import lang::rascalcore::check::CollectPattern;
@@ -119,7 +120,10 @@ void collect(current: (Import) `extend <ImportedModule m> ;`, Collector c){
     
 void collect(current: (Declaration) `<Tags tags> <Visibility visibility> <Type varType> <{Variable ","}+ variables> ;`, Collector c){
     tagsMap = getTags(tags);
-    if(ignoreCompiler(tagsMap)) { println("*** ignore <current>"); return; }
+    if(ignoreCompiler(tagsMap)) { 
+        c.report(info(current, "Ignoring variable declaration"));
+        return; 
+    }
     scope = c.getScope();
     c.enterScope(current); // wrap in extra scope to isolate variables declared in complex (function) types
         for(var <- variables){
@@ -233,9 +237,14 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
     parentScope = c.getScope();
        
     c.enterLubScope(decl);
+        collect(decl.tags, c);
+        <tpnames, tpbounds> = collectSignature(decl.signature, c);
+        //println("tpnames: <tpnames>");
+        //iprintln("tpbounds:"); iprintln(tpbounds);
+        //
         scope = c.getScope();
-        c.setScopeInfo(scope, functionScope(), returnInfo(signature.\type));
-        collect(decl.tags, decl.signature, c);
+        c.setScopeInfo(scope, functionScope(), signatureInfo(signature.\type));
+        
         
         dt = defType([signature], AType(Solver s) {
              ft = s.getType(signature);
@@ -269,7 +278,9 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
                     ft.concreteFingerprint = fingerprint(the_formals[0], ft.formals[0], true);
                 }
              }
-             return ft[alabel=unescape("<fname>")];
+             res = ft[alabel=unescape("<fname>")];
+             //println("collect FunctionDeclaration <fname>: <ft>");
+             return res;
          });
         dt.vis = getVis(decl.visibility, publicVis());
         if(!isEmpty(tagsMap)) dt.tags = tagsMap;
@@ -280,6 +291,8 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
         if(!isEmpty(modifiers)) dt.modifiers = modifiers;
          
         c.defineInScope(parentScope, prettyPrintName(fname), functionId(), current, dt); 
+        
+        beginUseBoundedTypeParameters(tpbounds, c);
         
         if(decl is abstract){
             if("javaClass" in tagsMap){
@@ -335,6 +348,8 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
         }
         if(decl is \default) collect(decl.body, c);
         
+        endUseBoundedTypeParameters(c);
+        
     c.leaveScope(decl);
 }
 
@@ -342,10 +357,14 @@ void collect(current: (FunctionBody) `{ <Statement* statements> }`, Collector c)
     collect(statements, c);
 }
 
-void collect(Signature signature, Collector c){
+tuple[set[str], rel[str,Type]] collectSignature(Signature signature, Collector c){
     returnType  = signature.\type;
     parameters  = signature.parameters;
     kwFormals   = getKwFormals(parameters);
+    
+    beginUseTypeParameters(c, closed=true);
+        collect(returnType, c); // any type parameters in return type remain closed (closed=true);
+    endUseTypeParameters(c);  
     
     exceptions = [];
     
@@ -360,25 +379,29 @@ void collect(Signature signature, Collector c){
             }
         }
     }
+    beginDefineOrReuseTypeParameters(c, closed=false);
+        collect(parameters, c); // any type parameters in parameter list remain open (closed=false);
+    endDefineOrReuseTypeParameters(c);
     
-    collect(returnType, parameters, c);
-    
-    rel[str,Type] tpbounds = computeTypeParamBounds(signature, c);
-    
+    <tpnames, tpbounds> = computeBoundsAndDefineTypeParams(signature, c);
+        
     c.calculate("signature", signature, [returnType, parameters, *exceptions],
         AType(Solver s){
             tformals = s.getType(parameters);
             formalsList = atypeList(elems) := tformals ? elems : [tformals];
+            rt = s.getType(returnType);
             ft = updateBounds(afunc(s.getType(returnType), formalsList, computeKwFormals(kwFormals, s)), minimizeBounds(tpbounds, s));
             return ft;
         });
+        
+    return <tpnames, tpbounds>;
 }
 
 @synopsis{Given a type t and a map of named bounds, update the bound in all type parameters occurring in t}
 private AType updateBounds(AType t, map[str,AType] bounds){
-    return visit(t) {case aparameter(pname, bnd, alabel=L) : {
+    return visit(t) {case aparameter(pname, bnd, alabel=L,closed=closed) : {
                             bnd = bounds[pname] ? avalue();
-                            insert isEmpty(L) ? aparameter(pname, bnd) : aparameter(pname, bnd, alabel=L);
+                            insert isEmpty(L) ? aparameter(pname, bnd, closed=closed) : aparameter(pname, bnd, alabel=L, closed=closed);
                         }
                     };
 }
@@ -388,7 +411,7 @@ private map[str,AType] minimizeBounds(rel[str,Type] typeParamBounds, Solver s){
     return propagateParams((tpname : commonLowerBound(typeParamBounds, tpname, s) | tpname <- domain(typeParamBounds)));
 }
 
-@synopsis{Propagate type pamaters in a bounds map}
+@synopsis{Propagate type parameters in a bounds map}
 private map[str, AType] propagateParams(map[str,AType] typeParamBounds){
     AType find(str tpname) = (aparameter(tpname2, _) := typeParamBounds[tpname]) ? typeParamBounds[tpname2] : typeParamBounds[tpname] ;
     
@@ -416,33 +439,40 @@ private AType commonLowerBound(rel[str,Type] typeParamBounds, str tpname,  Solve
             s.report(error(b, "Bounds %t and %t for type parameter `&%v` are not comparable", bt, minBound, tpname));
         }
     }
-    //println("commonLowerBound for <tpname> =\> <minBound>");
     return minBound;
 }
 
 @synopsis{Create a function for computing the type of type var `tpname`, given a bounds map}
-private AType(Solver) makeBoundDef(str tpname,  rel[str,Type] typeParamBounds)
-    = AType(Solver s) { return aparameter(tpname, commonLowerBound(typeParamBounds, tpname, s)); };
+private AType(Solver) makeBoundDef(TypeVar tvar,  rel[str,Type] typeParamBounds, bool closed=false)
+    = AType(Solver s) { 
+        tpname = "<tvar.name>";
+        tp = aparameter(tpname, commonLowerBound(typeParamBounds, tpname, s), closed=closed);
+        s.fact(tvar, tp);
+        return tp;
+      };
+      
+private AType(Solver) makeTypeGetter(TypeVar tvar, bool closed = false)
+    = AType(Solver s) { return s.getType(tvar.name)[closed=true]; };
     
-@synopsis{Compute a bounds map for a signature}
-private rel[str,Type] computeTypeParamBounds(Signature signature, Collector c){
+@synopsis{Compute a bounds map for a signature and define all type parameters accordingly}
+private tuple[set[str], rel[str,Type]] computeBoundsAndDefineTypeParams(Signature signature, Collector c){
     formals = getFormals(signature.parameters);
     kwFormals = getKwFormals(signature.parameters);
     returnType  = signature.\type;
    
-    typeParamsInParameters = {*getTypeParams(t) | t <- formals + kwFormals};
     typeParamsInReturn = getTypeParams(returnType);
+    // TODO: JV; I'm missing understanding here. Why is a variable of role typeVarId() not
+    // something we can look up in the current scope? Can't we list all variables of a certain role?
+    typeParamsInParameters = [*getTypeParams(t) | t <- formals + kwFormals];
     
     rel[str,Type] typeParamBounds = {};
     
-    for(tp <-  typeParamsInParameters + typeParamsInReturn){
+    for(TypeVar tp <-  typeParamsInReturn + typeParamsInParameters){
         tpname = "<tp.name>";
         if(tp is bounded){
             typeParamBounds += <tpname, tp.bound>;
         }
     }
-    
-    tpnamesInParams = { "<tp.name>" | tp <- typeParamsInParameters };
     
     seenInReturn = {};
     for(tp <- typeParamsInReturn){
@@ -451,14 +481,8 @@ private rel[str,Type] computeTypeParamBounds(Signature signature, Collector c){
                 c.use(tpbound.name, {typeVarId()});
             }
         }
-        tpname = "<tp.name>";
-        if(tpname in seenInReturn || tpname in tpnamesInParams){
-            c.use(tp.name, {typeVarId()});
-        } else {
-            seenInReturn += tpname;
-            c.define(tpname, typeVarId(), tp.name, 
-                defType(toList(typeParamBounds[tpname]), makeBoundDef(tpname, typeParamBounds)));
-        }
+        c.use(tp.name, {typeVarId()});
+        c.calculate("typevar in result type", tp, [tp.name], makeTypeGetter(tp,closed=true));
     }
     
     seenInParams = {};
@@ -471,18 +495,26 @@ private rel[str,Type] computeTypeParamBounds(Signature signature, Collector c){
         tpname = "<tp.name>";
         if(tpname in seenInParams){
             c.use(tp.name, {typeVarId()});
+            c.fact(tp, tp.name);
         } else {
             seenInParams += tpname;
             c.define(tpname, typeVarId(), tp.name, 
-                defType(toList(typeParamBounds[tpname]), makeBoundDef(tpname, typeParamBounds)));
+                defType(toList(typeParamBounds[tpname]), makeBoundDef(tp, typeParamBounds, closed=false)));
+            c.fact(tp, tp.name);
         }
     }
+
+    // TODO: JV: I'm still missing the understanding here. Why does the lookup of the parameter &T not
+    // fail by itself when we compute the return type from it's AST if it is not a previously declared type parameter?
+    // Do we not get two errors now? One for the undeclared type parameter and one like below?
     missing = seenInReturn - seenInParams;
     if(!isEmpty(missing)){
         missing = {"&<m>" | m <- missing };
         c.report(error(signature, "Type parameter(s) %v in return type of function %q not bound by its formal parameters", missing, signature.name));
     }
-    return typeParamBounds;
+    
+    tpNames = {"<tp.name>" | TypeVar tp <- typeParamsInParameters};
+    return <tpNames, typeParamBounds>;
 }
 
 void collect(Parameters parameters, Collector c){
@@ -502,16 +534,14 @@ void collect(Parameters parameters, Collector c){
             scope = c.getScope();
             
             c.calculate("formals", parameters, [],
-                AType(Solver s) { 
-                    s.push(inFormals, true);
-                        formalTypes = [ getPatternType(f, avalue(), scope, s) | f <- formals ];
-                    s.pop(inFormals);
+                AType(Solver s) {    
+                    formalTypes = [ getPatternType(f, avalue(), scope, s) | f <- formals ];
                     int last = size(formalTypes) -1;
                     if(parameters is varArgs){
                         formalTypes[last] = alist(unset(formalTypes[last], "alabel"), alabel=formalTypes[last].alabel);
                     }
                     for(int i <- index(formals)){
-                        checkNonVoid(formals[i], formalTypes[i], c, "Formal parameter");
+                        checkNonVoid(formals[i], formalTypes[i], s, "Formal parameter");
                     }
                     return atypeList(formalTypes);  //TODO: what happened to the kw parameters in this type?
                 });
@@ -532,33 +562,27 @@ void(Solver) makeReturnRequirement(Tree returnExpr, AType returnAType)
 
 void returnRequirement(Tree returnExpr, AType declaredReturnType, Solver s){  
     returnExprType = s.getType(returnExpr);
-
-    if(s.subtype(returnExprType, declaredReturnType)){
-        if(p:/aparameter(_,_) := declaredReturnType){
-            // Return type contains type parameters
-            // Find out how the type parameters in the return type are bound
-            Bindings bindings = ();
-            try   bindings = matchRascalTypeParams(declaredReturnType, returnExprType, bindings);
-            catch invalidMatch(str reason):
-                s.report(error(returnExpr, reason));
-                
-            // If some type parameter is not bound to void, an extra check is neccessary
-            // Otherwise, the return type will always be valid and no more checks are needed
-            if({avoid()} !:= range(bindings)){  
-                // Some type parameters have been bound to a non-void type.
-                
-                // Special case: if the return type is a single parameter with bound num, this is ok since
-                // an int, real or rat return value is acceptable.
-                if(aparameter(_,bnd) := declaredReturnType && anum() := bnd) return;
-                
-                // In the general case, the declared return type should also be a subtype of the actually returned type
-                s.requireTrue(s.subtype(declaredReturnType, returnExprType),
-                    error(returnExpr, "Returned type %t is not always a subtype of expected return type %t", returnExprType, declaredReturnType));  
-            }
-        } 
-    } else {
-        s.report(error(returnExpr, "Return type %t expected, found %t", declaredReturnType, returnExprType));
+    msg = p:/aparameter(_,_) := declaredReturnType
+          ? error(returnExpr, "Returned type %t is not always a subtype of expected return type %t", returnExprType, declaredReturnType)
+          : error(returnExpr, "Return type %t expected, found %t", declaredReturnType, returnExprType);
+          
+    bindings = ();
+    rsuffix = "r";
+    dsuffix = "d";
+    returnExprTypeU = makeUniqueTypeParams(returnExprType, rsuffix);
+    declaredReturnTypeU  = makeUniqueTypeParams(declaredReturnType, dsuffix);
+    try {
+        bindings = matchRascalTypeParams(returnExprTypeU, declaredReturnTypeU, bindings);
+    } catch invalidMatch(str reason):
+        s.report(error(returnExpr, reason));
+    
+    try {
+        returnExprTypeU = instantiateRascalTypeParameters(returnExpr, returnExprTypeU, bindings, s);
+    } catch invalidInstantiation(str msg): {
+        s.report(error(current, "Cannot instantiate return type `<prettyAType(returnExprType)>`: " + msg));
     }
+    
+    s.requireSubType(deUnique(returnExprTypeU), deUnique(declaredReturnTypeU), msg);
  }
 
 // ---- return statement (closely interacts with function declaration) --------
@@ -567,7 +591,7 @@ void collect(current: (Statement) `return <Statement statement>`, Collector c){
     functionScopes = c.getScopeInfo(functionScope());
     assert !isEmpty(functionScopes);
     for(<_, scopeInfo> <- functionScopes){
-        if(returnInfo(Type returnType) := scopeInfo){
+        if(signatureInfo(Type returnType) := scopeInfo){
            c.require("check return type", current, [statement], makeReturnRequirement(statement, returnType));
            c.fact(current, returnType); // Note that type of the return statement as a whole is the function's return type
            collect(statement, c);
@@ -616,10 +640,6 @@ void collect (current: (Declaration) `<Tags tags> <Visibility visibility> alias 
         append tp.typeVar;
     }
     
-    for(tp <- typeParams){
-        c.define("<tp.name>", typeVarId(), tp.name, defType(tp));
-    }
-    
     c.define(aliasName, aliasId(), name, defType(typeParams + base, AType(Solver s){ 
         bindings = ();
         params = for(int i <- index(typeParams)){
@@ -627,10 +647,21 @@ void collect (current: (Declaration) `<Tags tags> <Visibility visibility> alias 
             if(!isRascalTypeParam(ptype)){
                   s.report(error(typeParams[i], "Only type parameter allowed, found %t", ptype));
             }
-            append ptype; //unset(ptype, "alabel"); // TODO: Erase alabels to enable later subset check
+            append ptype;
         }
         
         return aalias(aliasName, params, s.getType(base));
     })[md5 = md5Hash("<current>")]);
-    collect([tags] + typeParams + base, c);
+    
+    collect(tags, c);
+    
+    beginDefineOrReuseTypeParameters(c, closed=false);
+        collect(typeParams, c);
+    endDefineOrReuseTypeParameters(c);  
+     
+    beginUseTypeParameters(c, closed=true);
+        collect(base, c);
+    endUseTypeParameters(c);
+      
+        
 } 

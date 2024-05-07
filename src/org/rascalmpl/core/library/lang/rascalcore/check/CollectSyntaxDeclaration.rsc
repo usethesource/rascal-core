@@ -47,7 +47,7 @@ void declareSyntax(SyntaxDefinition current, SyntaxRole syntaxRole, IdRole idRol
        
         typeParameters = getTypeParameters(defined);
         if(!isEmpty(typeParameters)){
-            nonterminalType = nonterminalType[parameters=[ aparameter("<tp.nonterminal>", treeType)| tp <- typeParameters ]];
+            nonterminalType = nonterminalType[parameters=[ aparameter("<tp.nonterminal>", treeType,closed=true)| tp <- typeParameters ]];
         }
         
         dt = defType(nonterminalType);
@@ -59,13 +59,15 @@ void declareSyntax(SyntaxDefinition current, SyntaxRole syntaxRole, IdRole idRol
 
         adtParentScope = c.getScope();
         c.enterScope(current);
-            for(tp <- typeParameters){
-                c.define("<tp.nonterminal>", typeVarId(), tp.nonterminal, defType(aparameter("<tp.nonterminal>", treeType)));
-            }
+            beginDefineOrReuseTypeParameters(c,closed=false);
+                collect(defined, c);
+            endDefineOrReuseTypeParameters(c);
             
             // visit all the productions in the parent scope of the syntax declaration
-            c.push(currentAdt, <current, [], adtParentScope>);
-                collect(production, c);
+            c.push(currentAdt, <current, [], 0, adtParentScope>);
+                beginUseTypeParameters(c,closed=true);
+                    collect(production, c);
+                endUseTypeParameters(c);
             c.pop(currentAdt);
         c.leaveScope(current);
     } else {
@@ -120,12 +122,7 @@ private default AType removeChainRule(AType t) = t;
 void collect(current: (Prod) `<ProdModifier* modifiers> <Name name> : <Sym* syms>`, Collector c){
     symbols = [sym | sym <- syms];
     
-    typeParametersInSymbols = {*getTypeParameters(sym) | sym <- symbols };
-    for(tv <- typeParametersInSymbols){
-        c.use(tv.nonterminal, {typeVarId()});
-    }
-    
-    if(<Tree adt, list[KeywordFormal] _, loc adtParentScope> := c.top(currentAdt)){
+    if(<Tree adt, _, _, loc adtParentScope> := c.top(currentAdt)){
         // Compute the production type
         c.calculate("named production", current, adt + symbols,
             AType(Solver s) {
@@ -136,8 +133,10 @@ void collect(current: (Prod) `<ProdModifier* modifiers> <Name name> : <Sym* syms
                     return res;
                  }
             });
-        //qualName = unescape("<name>"); // 
-        if(!(SyntaxDefinition _ := adt)){
+        inLexicalAdt = false;
+        if(SyntaxDefinition sd := adt){
+            inLexicalAdt = sd is \lexical;
+        } else {
             println("*** Collect: <adt> is not a SyntaxDefinition ***");
         }
         qualName = "<SyntaxDefinition sd := adt ? sd.defined.nonterminal : "???">_<unescape("<name>")>";
@@ -151,15 +150,23 @@ void collect(current: (Prod) `<ProdModifier* modifiers> <Name name> : <Sym* syms
                         s.fact(syms, ptype);
                     }
                     def = cprod.def;
-                    fields = [ getSyntaxType(removeChainRule(tsym), s) | sym <- symbols,  !isTerminalSym(sym), tsym := s.getType(sym), isNonTerminalAType(tsym)];                                                
-                    //fields = [ removeChainRule(t) | sym <- symbols, ssym := removeConditions(sym), !isTerminalSym(ssym), tsym := s.getType(ssym), t := removeConditional(tsym), isNonTerminalAType(t)];                                                
+                    fields = [ inLexicalAdt && isLexicalType(stp) ? astr() : stp
+                             | 
+                               sym <- symbols, 
+                               !isTerminalSym(sym), 
+                               tsym := s.getType(sym), 
+                               isNonTerminalAType(tsym),
+                               stp := getSyntaxType(removeChainRule(tsym), s)
+                             ];                                                                                               
                           
                     def = \start(sdef) := def ? sdef : def;
                     //def = \start(sdef) := def ? sdef : unset(def, "alabel");
                     return acons(def, fields, [], alabel=unescape("<name>"));
                  } else throw "Unexpected type of production: <ptype>";
             })[md5=md5Hash("<adt><current>")]);
-        collect(symbols, c);
+        beginUseTypeParameters(c,closed=true);
+            collect(symbols, c);
+        endUseTypeParameters(c);
     } else {
         throw "collect Named Prod: currentAdt not found";
     }
@@ -167,18 +174,20 @@ void collect(current: (Prod) `<ProdModifier* modifiers> <Name name> : <Sym* syms
 
 void collect(current: (Prod) `<ProdModifier* modifiers> <Sym* syms>`, Collector c){
     symbols = [sym | sym <- syms];
-    typeParametersInSymbols = {*getTypeParameters(sym) | sym <- symbols };
-    for(tv <- typeParametersInSymbols){
-        c.use(tv.nonterminal, {typeVarId()});
-    }
+    //typeParametersInSymbols = {*getTypeParameters(sym) | sym <- symbols };
+    //for(tv <- typeParametersInSymbols){
+    //    c.use(tv.nonterminal, {typeVarId()});
+    //}
  
-    if(<Tree adt, list[KeywordFormal] _, loc _> := c.top(currentAdt)){
+    if(<Tree adt, _, _, _> := c.top(currentAdt)){
         c.calculate("unnamed production", current, adt + symbols,
             AType(Solver s){
                 res = aprod(computeProd(current, "", s.getType(adt), modifiers, symbols, s));
                 return res;
             });
-        collect(symbols, c);
+        beginUseTypeParameters(c,closed=true);
+            collect(symbols, c);
+        endUseTypeParameters(c);
     } else {
         throw "collect Unnamed Prod: currentAdt not found";
     }
@@ -196,7 +205,7 @@ void collect(current: (Prod) `<Assoc ass> ( <Prod group> )`, Collector c){
     case "right":       asc = AAssociativity::aright();
     }
     
-    if(<Tree adt, list[KeywordFormal] _, loc _> := c.top(currentAdt)){
+    if(<Tree adt, _, _, _> := c.top(currentAdt)){
         c.calculate("assoc", current, [adt, group],
             AType(Solver s){
                 adtType = s.getType(adt);
@@ -214,7 +223,7 @@ list[Prod] normalizeAlt((Prod) `<Prod lhs> | <Prod rhs>`)
 default list[Prod] normalizeAlt(Prod p) = [p];
 
 void collect(current: (Prod) `<Prod lhs> | <Prod rhs>`,  Collector c){
-    if(<Tree adt, list[KeywordFormal] _, loc _> := c.top(currentAdt)){
+    if(<Tree adt, _,  _, _> := c.top(currentAdt)){
         alts = normalizeAlt(current);
         c.calculate("alt production", current, [adt, *alts],
             AType(Solver s){
@@ -234,7 +243,7 @@ void collect(current: (Prod) `<Prod lhs> | <Prod rhs>`,  Collector c){
 }
  
 void collect(current: (Prod) `<Prod lhs> \> <Prod rhs>`,  Collector c){
-    if(<Tree adt, list[KeywordFormal] _, loc _> := c.top(currentAdt)){
+    if(<Tree adt, _, _, _> := c.top(currentAdt)){
         c.calculate("first production", current, [adt, lhs, rhs],
             AType(Solver s){
                 adtType = s.getType(adt);

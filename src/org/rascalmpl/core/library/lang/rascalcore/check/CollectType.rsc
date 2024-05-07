@@ -78,12 +78,16 @@ default void collectBasicType(BasicType bt, Collector c) { c.report(error(bt, "I
 // ---- TypeArgs -------------------------------------------------------------
 
 void collect(current: (TypeArg) `<Type tp>`, Collector c){
-    collect(tp, c);
+    //c.push(currentAdt, <current, [tp], c.getScope()>);
+        collect(tp, c);
+    //c.pop(currentAdt);
     c.fact(current, tp);
 }
 
 void collect(current: (TypeArg) `<Type tp> <Name name>`, Collector c){
-    collect(tp, c);
+    //c.push(currentAdt, <current, [tp], c.getScope()>);
+        collect(tp, c);
+    //c.pop(currentAdt);
     try {
         c.fact(name, c.getType(tp)[alabel=unescape("<name>")]);
     } catch TypeUnavailable(): {
@@ -178,7 +182,9 @@ void collect(current:(Type)`map [ < {TypeArg ","}+ tas > ]`, Collector c){
         c.fact(current, amap(avalue(), avalue()));
         return;
     }
-    collect(targs, c);
+    //c.push(currentAdt, <current, targs, c.getScope()>);
+        collect(targs, c);
+    //c.pop(currentAdt);
    
     try {
         <msgs, result> = handleMapFields(tas, c.getType(targs[0]), c.getType(targs[1]));
@@ -348,45 +354,34 @@ tuple[list[FailMessage] msgs, AType atype] handleFunctionType({TypeArg ","}* _, 
 
 @doc{Convert Rascal function types into their abstract representation.}
 void collect(current: (FunctionType) `<Type t> ( <{TypeArg ","}* tas> )`, Collector c) {
-    targs = [ta | ta <- tas];
     
-    resolvedArgTypes = [];
-    for(targ <- targs){
-        collect(targ.\type, c);
-        try {
-            argType = c.getType(targ.\type);
-            c.fact(targ, argType);
-            if(targ has name) {
-                labelledArgType = argType[alabel="<targ.name>"];
-                resolvedArgTypes += labelledArgType;
-                c.define("<targ.name>", formalId(), targ.name, defType(labelledArgType));
-                c.fact(targ, labelledArgType);
-            } else {
-                resolvedArgTypes += argType;
-            }
-        } catch TypeUnavailable(): {
+    //println("collect: <current>");
+    // return type, any type parameters should be closed
+    beginUseTypeParameters(c, closed=true);
+        collect(t, c);
+    endUseTypeParameters(c);
+    
+    targs = [ta | ta <- tas];
+    //<inBody, tpbounds> = useBoundedTypeParameters(c);
+    //println("collect: <current>, inBody: <inBody>");
+    // When a function type occurs in a body, just use closed type parameters
+    /*if(inBody) beginUseTypeParameters(c, closed=true); else */beginDefineOrReuseTypeParameters(c,closed=false);
+        for(targ <- targs){
+            collect(targ.\type, c);
             c.fact(targ, targ.\type);
             if(targ has name) {
                 c.define("<targ.name>", formalId(), targ.name, defType([targ.\type], makeGetTypeArg(targ)));
                 c.fact(targ, targ.name);
              }
         }
-    }
-    collect(t, c);
-    if(size(targs) == size(resolvedArgTypes)){
-        try {
-            <msgs, result> = handleFunctionType(tas, c.getType(t), resolvedArgTypes);
-            for(m <- msgs) c.report(m);
-            c.fact(current, result);
-            return;
-        } catch TypeUnavailable(): /* fall through when a type is not available */;
-    }
+    /*if(inBody) endUseTypeParameters(c); else */endDefineOrReuseTypeParameters(c);
     
     c.calculate("function type", current, t + targs,
         AType(Solver s){
             <msgs, result> = handleFunctionType(tas, s.getType(t), [s.getType(ta) | ta <- targs]);
             for(m <- msgs) s.report(m);
             s.fact(current, result);
+            //println("collect: <current> =\> <result>, inBody: <inBody>");
             return result;
         });
 }
@@ -482,9 +477,30 @@ void collect(current:(Sym) `<Nonterminal n>`, Collector c){
 }
 
 void collect(current:(Sym) `& <Nonterminal n>`, Collector c){
+    pname = prettyPrintName("<n>");
+    
+    if(<true, bool closed> := defineOrReuseTypeParameters(c)){
+        if(c.isAlreadyDefined(pname, n)){
+            c.use(n, {typeVarId() });
+            //println("Use <pname> at <current@\loc>");
+        } else {
+            c.define(pname, typeVarId(), n, defType(aparameter(pname,treeType, closed=closed)));
+            //println("Define <pname> at <current@\loc>");
+        }
+        c.fact(current, n);
+        return;
+    }  else
+    if(<true, bool _> := useTypeParameters(c)){
+        c.use(n, {typeVarId() });
+        //println("Use <pname> at <current@\loc>");
+        c.fact(current, n);
+        return;
+    }     
+    
     //c.use(n, {typeVarId()});
-    //c.fact(current, n);
-    c.fact(current, aparameter(prettyPrintName("<n>"),avalue()));
+    ////c.fact(current, n);
+    //closed = !insideSignature(c);
+    c.fact(current, aparameter(prettyPrintName("<n>"),treeType(),closed=true));
 }
 
 void collect(current:(Sym) `<Nonterminal n>[ <{Sym ","}+ parameters> ]`, Collector c){
@@ -499,7 +515,9 @@ void collect(current:(Sym) `<Nonterminal n>[ <{Sym ","}+ parameters> ]`, Collect
             base.parameters = [s.getType(p) | p <- params]; // TODO: what to do when base == start(...)?
             return base;
         });
-    collect(params, c);
+    beginDefineOrReuseTypeParameters(c, closed=false);
+        collect(params, c);
+    endDefineOrReuseTypeParameters(c);
 }
 
 void collect(current:(Sym) `start [ <Nonterminal n> ]`, Collector c){
@@ -734,19 +752,87 @@ void collect(Sym current, Collector c){
     throw "collect Sym, missed case <current>";
 }
 
+bool debugTP = false;
 @doc{Convert Rascal type variables into their abstract representation.}
 
 void collect(current:(TypeVar) `& <Name n>`, Collector c){
-    c.fact(current, aparameter(prettyPrintName(n),avalue()));
+    pname = prettyPrintName(n);
+    
+    if(<true, bool closed> := defineOrReuseTypeParameters(c)){
+        if(c.isAlreadyDefined(pname, n)){
+            c.use(n, {typeVarId() });
+            if(debugTP)println("Use <pname> at <current@\loc>");
+        } else {
+            bound = avalue();
+            if(isEmpty(c.getStack(currentAdt))){
+                ;
+             } else if(<Tree adt, _, _, _> := c.top(currentAdt)){
+                bound = SyntaxDefinition _ := adt ? treeType : avalue();
+            } else {
+                throw "collect TypeVar: currentAdt not found";
+            }
+            c.define(pname, typeVarId(), n, defType(aparameter(pname, bound, closed=closed)));
+            if(debugTP)println("Define <pname> at <current@\loc>, closed=<closed>");
+        }
+        c.calculate("xxx", current, [n], AType (Solver s) { return s.getType(n)[closed=closed]; });
+        return;
+      
+    } else if(<true, bool closed> := useTypeParameters(c)){
+        c.use(n, {typeVarId() });
+        if(debugTP)println("Use <pname> at <current@\loc>, closed=<closed>");
+        c.calculate("xxx", current, [n], AType (Solver s) { return s.getType(n)[closed=closed]; });
+        return;
+    } else {        
+        if(<true, rel[str, Type] tpbounds> := useBoundedTypeParameters(c)){
+            if(tpbounds[pname]?){
+                bnds = toList(tpbounds[pname]);
+                if(debugTP)println("collect: Adding calculator for <pname>");
+                c.calculate("type parameter with bound", current, bnds,
+                    AType(Solver s){ 
+                        new_bnd = (avalue() | aglb(it, s.getType(bnd)) | bnd <- bnds);
+                        return  aparameter(pname, new_bnd, closed=true);
+                    });  
+            } else {
+                if(debugTP)println("collect: fact for <pname>, closed=<closed>");
+                c.fact(current, aparameter(pname, avalue(), closed=true));
+            }
+            return;
+        }
+    }
+    if(debugTP)println("collect: postponing processing of <pname>");
 }
 
 void collect(current: (TypeVar) `& <Name n> \<: <Type tp>`, Collector c){
-    collect(tp, c);
-    try {
-        c.fact(current,  aparameter(prettyPrintName(n), c.getType(tp)));
-    } catch TypeUnavailable(): {
-        c.calculate("type parameter with bound", current, [tp], AType(Solver s){ return  aparameter(prettyPrintName(n), s.getType(tp)); });  
+    pname = prettyPrintName(n);
+    
+    if(<true, bool closed> := defineOrReuseTypeParameters(c)){
+        if(c.isAlreadyDefined(pname, n)){
+            c.use(n, {typeVarId() });
+            if(debugTP)println("Use <pname> at <current@\loc>");
+        } else { 
+            c.define(pname, typeVarId(), n, defTypeCall([getLoc(tp)], AType(Solver s) {return aparameter(pname,s.getType(tp), closed=closed); }));
+            if(debugTP)println("Define <pname> at <current@\loc>");
+        }
+        c.fact(current, n);
+    } else if(<true, bool closed> := useTypeParameters(c)){
+        c.use(n, {typeVarId() });
+        c.calculate("xxx", current, [n], AType (Solver s) { return s.getType(n)[closed=closed]; });
+        if(debugTP)println("Use <pname> at <current@\loc>");
+    } else if(<true, rel[str, Type] tpbounds> := useBoundedTypeParameters(c)){
+        if(tpbounds[pname]?){
+            bnds = toList(tpbounds[pname]);
+            c.calculate("type parameter with bound", n, bnds, 
+                AType(Solver s){ 
+                    new_bnd = (avalue() | aglb(it, s.getType(bnd)) | bnd <- bnds);
+                    return  aparameter(prettyPrintName(n), s.getType(new_bnd), closed=true);
+                });  
+        } else {
+            c.calculate("type parameter with bound", n, [tp], AType(Solver s){ return  aparameter(prettyPrintName(n), s.getType(tp), closed=true); });
+        }  
+        c.fact(current, n);
     }
+    
+    collect(tp, c);
 }
 
 @doc{A parsing function, useful for generating test cases.}
