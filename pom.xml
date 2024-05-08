@@ -78,7 +78,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
-                <version>2.4.1</version>
+                <version>3.3.2</version>
                 <configuration>
                     <filesets>
                         <fileset>
@@ -94,7 +94,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.5.0</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -114,7 +114,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>3.2.5</version>
                 <configuration>
                     <argLine>
                         -ea
@@ -140,7 +140,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
+                <version>3.13.0</version>
                 <configuration>
                     <release>11</release>
                     <compilerId>eclipse</compilerId>
@@ -154,7 +154,7 @@
                     <dependency>
                         <groupId>org.codehaus.plexus</groupId>
                         <artifactId>plexus-compiler-eclipse</artifactId>
-                        <version>2.8.8</version>
+                        <version>2.13.0</version> <!-- 2.14 and higher require jdk 17+ and mvn 3.9.6 +-->
                     </dependency>
                 </dependencies>
             </plugin>
@@ -179,11 +179,31 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
+                <version>3.0.1</version>
                 <configuration>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                     <arguments>-DskipTests -Drascal.compile.skip -Drascal.tutor.skip</arguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-maven</id>
+                        <goals>
+                        <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>(3.8,)</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -204,7 +224,7 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.11.2</version>
+            <version>0.11.5</version>
         </dependency>
         <dependency>
         	<groupId>io.usethesource</groupId>
