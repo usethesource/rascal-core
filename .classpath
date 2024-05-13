@@ -8,7 +8,12 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources2">
+	<classpathentry excluding="test-annotations/|target/generated-test-sources/test-annotations/" kind="src" output="target/classes2" path="target/generated-test-sources">
+		<attributes>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/test-classes2" path="target/generated-test-sources2">
 		<attributes>
 			<attribute name="ignore_optional_problems" value="true"/>
 			<attribute name="test" value="true"/>
@@ -42,7 +47,7 @@
 			<attribute name="optional" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources/test-annotations">
+	<classpathentry kind="src" output="target/classes2" path="target/generated-test-sources/test-annotations">
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="test" value="true"/>
