@@ -4,19 +4,21 @@
 	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src">
 		<attributes>
 			<attribute name="ignore_optional_problems" value="true"/>
+			<attribute name="test" value="true"/>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources">
+	<classpathentry excluding="target/generated-test-sources/test-annotations/" including="**/*.java" kind="src" output="target/test-classes" path="target/generated-test-sources">
 		<attributes>
+			<attribute name="ignore_optional_problems" value="true"/>
 			<attribute name="test" value="true"/>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/rascal"/>
-	<classpathentry kind="src" output="target/test-classes" path="test">
+	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="test">
 		<attributes>
 			<attribute name="ignore_optional_problems" value="true"/>
 			<attribute name="test" value="true"/>
@@ -27,6 +29,7 @@
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/typepal"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11">
 		<attributes>
+			<attribute name="module" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
@@ -35,15 +38,9 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry excluding="**" kind="src" output="target/test-classes" path="target/generated-test-resources">
+	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources/test-annotations">
 		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
 			<attribute name="test" value="true"/>
-			<attribute name="optional" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="target/generated-sources/annotations">
-		<attributes>
 			<attribute name="optional" value="true"/>
 		</attributes>
 	</classpathentry>
