@@ -29,6 +29,47 @@ This function documents and implements the subtype relation of Rascal's type sys
 bool asubtype(tvar(s), AType r) { 
     throw TypeUnavailable(); 
 }
+
+@synopis{optimized definition of asubtype}
+@description{
+
+#### A note on overloadedAType
+
+Rascal does not have "disjunctive" types, but ((overloadedAType)) exists to represent choices
+during static checking between names that can have different types at compile-time. A good example
+is `int f(int i) = 1; int f(str x) = 2;` where the function name `f` has two types. One where the 
+first parameter matches only ints and the second where the first parameter only matches strs.
+
+The `overloadedAType` constructor contains necessary name resolution information (links) like `loc` 
+and `IdRole` which do not have anything to do with the type-system, but all the more with name resolution 
+and definitions of functions and other IdRoles. So this is essential bookkeeping information that 
+happens to be represented as an AType constructor.
+
+To make sure this intermediate bookkeeping does not break properties of the type-system (it being 
+a finite lattice for example), the definitions of subtype and lub have to be carefully considered. 
+In particular a disjunctive type could break transitivity of `subtype`: `a < b && b < c ==> a < c` 
+by judiciously adding and removing constituents to `a` and `c`, such that `!(a < c)` becomes true 
+even though `a < b` and `b < c` are still true. Efficient type inference without back-tracking, 
+using a search in the type lattice with `lub`, would become impossible if sub-type is not transitive 
+anymore. 
+
+Principles for `subtype` to remain correct in the presence of overloadedAType:
+* `subtype` must never depend on `loc` or `IdRole` information, only other `AType` information
+* `subtype` can never defer to identity in case of AType with parameter positions or type parameters (generic types). 
+Because that could break co- and contra-variance rules of other types nested here.
+* `subtype` can not select on of the "disjunctive" types and ignore the others, because that would
+introduce disjunctive types in earnest and break several properties that we depend on elsewhere.
+
+Single solution:
+* Always substitute any overloadedAType directly by the lub type that represents it:
+` overloadedAType(overloads) => (\avoid() | alub(tp) | <_, _, tp> <- overloads)`
+
+Here we see that:
+* `loc` and `IdRole` are properly forgotten
+* not one element is skipped or selected above the others (which would induce non-transitivity)
+* all type parameters of all ATypes are considered, by induction of the `alub` reducer.
+
+}
 default bool asubtype(AType l, AType r){
     switch(r){
         case l:     
@@ -36,7 +77,8 @@ default bool asubtype(AType l, AType r){
         case tvar(_):
             throw TypeUnavailable(); 
         case overloadedAType(overloads):
-           return isEmpty(overloads) ? asubtype(l, avoid()) : any(<_, _, tp> <- overloads, asubtype(l, tp));
+            return asubtype(l, (\avoid() | alub(tp) | <_, _, tp> <- overloads));
+        //    return isEmpty(overloads) ? asubtype(l, avoid()) : any(<_, _, tp> <- overloads, asubtype(l, tp));
         case avalue():
             return true;
         case anum():
@@ -108,9 +150,19 @@ bool asubtypeParam(p1:aparameter(str n1, AType b1, closed=true), AType r) {
     return res;
 }
 
-bool asubtype(overloadedAType(overloads), AType r) = isEmpty(overloads) ? asubtype(avoid(), r) : any(<_, _, tp> <- overloads, asubtype(tp, r));
+@synopsis{Left-hand side case for overloadedAType mirrors right-hand-side case}
+@description{
+To achieve the properties of a type-lattice asubtype must be transitive, and so it can not 
+pick the best element from the overloadeds. It must first unify the overloads with lub
+to achieve transitivity. See the optimized base-case of ((asubtype)) for an explanation.
+}
+bool asubtype(overloadedAType(overloads), AType r) = asubtype((\avoid() | lub(it, tp) | <_, _, tp> <- overloads));
+// isEmpty(overloads) ? asubtype(avoid(), r) : any(<_, _, tp> <- overloads, asubtype(tp, r));
 
+@synopsis{avoid is the bottom type, it is a subtype of every type, even itself.}
 bool asubtype(avoid(), AType _) = true;
+
+@synopsis{avalue is the top type, every type is its subtype, even itself.}
 bool asubtype(AType _, avalue()) = true;
  
 bool asubtype(ac:acons(AType a, list[AType] ap, list[Keyword] _), AType b){
@@ -119,24 +171,31 @@ bool asubtype(ac:acons(AType a, list[AType] ap, list[Keyword] _), AType b){
              return comparableList(ap, bp);
         case adt: aadt(str _, list[AType] _, _):
              return asubtype(a,adt);
+        // TODO: this is a big bug. Something is not both a tree node and the function that constructs that tree node.
         case afunc(a,list[AType] bp, list[Keyword] _):
              return comparableList(ap, bp);
+        // TODO: or otherwise this is a big bug. Something is not both a tree node and the function that constructs that tree node.
         case anode(_):
              return true;
+        // TODO: same here. is an acons a tree node or the function that constructs it? I'd say the first, but then its _not_ the latter.
         case afunc(AType b, list[AType] bp, list[Keyword] _):
              return asubtype(a, b) && comparableList(ap, bp);
+        // TODO: this is a different bug. \start sorts wrap other sorts with a rule. The types are not substitutable.
         case \start(AType t):
             return asubtype(ac, t);
     }
     fail;
 }
 
+// TODO A production is not a type, but if it would be then definitely _not_ a subtype of start
 bool asubtype(ap: aprod(AProduction p), AType b){
     switch(b){
         case aprod(AProduction q):
             return asubtype(p.def, q.def);
+        // TODO: this is a bug: to make a start(t) you have to wrap the t with a start(t) production. One is not a substitute for the other
         case \start(AType t):
             return asubtype(ap, t);
+        // TODO: why is conditional wired in here? Every conditional sort is an alias for the non-terminal it wraps in the type-system.
         case conditional(AType t, _):
             return asubtype(ap, t);
         case AType t:
@@ -149,18 +208,22 @@ bool asubtype(adt:aadt(str n, list[AType] l, SyntaxRole sr), AType b){
     switch(b){
         case anode(_):
             return true;
+        // TODO: bug: an AST can never be a sub-type of a constructor. A constructor is more specific not the same. 
+        // this code is probably dead because we can not type in constructor types in Rascal?
         case acons(AType a, list[AType] _, list[Keyword] _):
             return asubtype(adt, a);
         case aadt(n, list[AType] r, _):
             return asubtypeList(l, r);
         case aadt("Tree", _, _):
             if(isConcreteSyntaxRole(sr)) return true;
+        // TODO start bug like above
         case \start(AType t):
             if(isConcreteSyntaxRole(sr)) return asubtype(adt, t);
     }
     fail;
 }
 
+// TODO: Bug: this is not the case. \start ryles must wrap something with a production to become start. The types are not substitutable.
 bool asubtype(\start(AType a), AType b) = asubtype(a, b);
 
 bool asubtype(i:\iter(AType s), AType b){
@@ -177,6 +240,7 @@ bool asubtype(i:\iter(AType s), AType b){
             return asubtype(s,t) && isEmpty(removeLayout(seps));
         case \iter-star-seps(AType t, list[AType] seps):
             return asubtype(s,t) && isEmpty(removeLayout(seps));
+        // TODO: start bug
         case \start(AType t):
             return asubtype(i, t);
     }
@@ -197,6 +261,7 @@ bool asubtype(i:\iter-seps(AType s, list[AType] seps), AType b){
             return asubtype(s,t) && isEmpty(removeLayout(seps));
         case \iter-star-seps(AType t, list[AType] seps2):
             return asubtype(s,t) && asubtypeList(removeLayout(seps), removeLayout(seps2));
+        // TODO: start bug
         case \start(AType t):
             return asubtype(i, t);
     }
@@ -213,6 +278,7 @@ bool asubtype(i:\iter-star(AType s), AType b){
             return asubtype(s, t);
         case \iter-star-seps(AType t, list[AType] seps):
             return asubtype(s,t) && isEmpty(removeLayout(seps));
+        // TODO: start bug
         case \start(AType t):
             return asubtype(i, t);
     }
@@ -227,6 +293,7 @@ bool asubtype(i:\iter-star-seps(AType s, list[AType] seps), AType b){
             return true;
         case \iter-star-seps(AType t, list[AType] seps2):
             return asubtype(s,t) && asubtypeList(removeLayout(seps), removeLayout(seps2));
+        // TODO: start bug
         case \start(AType t):
             return asubtype(i, t);
     }
@@ -255,6 +322,7 @@ bool asubtype(conditional(AType s, _), AType r /*conditional(AType t, _)*/) {
 // bool asubtype(AType s, \opt(AType t)) = subtype(s,t);
 // bool asubtype(AType s, \alt({AType t, *_}) = true when subtype(s, t); // backtracks over the alternatives
 
+// TODO: why are these commented out? These are correct.
 //bool asubtype(aint(), anum()) = true;
 //bool asubtype(arat(), anum()) = true;
 //bool asubtype(areal(), anum()) = true;
@@ -314,8 +382,9 @@ bool asubtype(AType l:afunc(AType a, list[AType] ap, list[Keyword] _), AType r){
         case acons(b,list[AType] bp, list[Keyword] _):
             return asubtype(a, b) && comparableList(ap, bp);
         case afunc(AType b, list[AType] bp, list[Keyword] _): {
-                // note that comparability is enough for function argument sub-typing due to pattern matching semantics
+                // note that pair-wise parameter comparability is enough for function argument sub-typing due to pattern matching semantics
                 ares = asubtype(a,b);
+
                 bres  = comparableList(ap, bp);
                 //println("asubtype(<l>, <r>) =\> <ares>, <bres>");
                 return ares && bres;
@@ -341,8 +410,10 @@ bool asubtype(a:anode(list[AType] l), AType b){
     switch(b){
         case anode(_):
             return true;
+        // TODO: what is a parameterized `node` type?
         case anode(list[AType] r): 
             return l <= r;
+        // TODO start bug
         case \start(t):
             return asubtype(a, t);
     }
@@ -356,20 +427,26 @@ bool asubtype(l:\achar-class(_), AType r){
         case \achar-class(_): {
             if(l.ranges == r.ranges)
                 return true;
+            // TODO bug: this does not implement sub-class semantics. There could be more left `[a-z] <: [a-zA-Z]`
+            // the run-time implements sub-class semantics explicitly making use of the ordering and non-overlapping
+            // guarantees of the ranges.
             if(difference(r, l) == \achar-class([]))
                 return false;
             return true;
         }
         case aadt("Tree", _, _):
             return true; // characters are Tree instances 
+        // TODO start bug
         case \start(t):
             return asubtype(l, t);
     }
     fail;
 }
 
+// TODO: bug achar is not a type in Rascal. only singleton character classes [a]
 bool asubtype(l:\achar-class(list[ACharRange] _), achar(int c)) = l == \achar-class([arange(c,c)]);
 
+// TODO: bug achar is not a type in Rascal. only singleton character classes [a]
 bool asubtype(achar(int c), \achar-class(list[ACharRange] ranges))
     = difference(ranges, [arange(c,c)]) == [arange(c,c)];
 
@@ -515,11 +592,15 @@ default AType alub(AType s, AType t)
 
 AType alub(atypeList(ts1), atypeList(ts2)) = atypeList(alubList(ts1, ts2));
 
+
+@synopsis{in alub, an overloadedAType is always represented by the least covering type of the constituents}
 AType alub(overloadedAType(overloads), AType t2)
-    = isEmpty(overloads) ? t2 : alub((avalue() | aglb(it, tp) | <_, _, tp> <- overloads), t2);
+    = alub((\avoid() | alub(it, tp) | <_, _, tp> <- overloads), t2);
+    // = isEmpty(overloads) ? t2 : alub((avalue() | aglb(it, tp) | <_, _, tp> <- overloads), t2);
 
 AType alub(AType t1, overloadedAType(overloads))
-    = isEmpty(overloads) ? t1 : alub(t1, (avalue() | aglb(it, tp)  | <_, _, tp> <- overloads));
+    = alub(t1, (\avoid() | alub(it, tp) | <_, _, tp> <- overloads));
+    // = isEmpty(overloads) ? t1 : alub(t1, (avalue() | aglb(it, tp)  | <_, _, tp> <- overloads));
     
 AType alub(avalue(), AType t) = avalue();
 AType alub(AType s, avalue()) = avalue();
@@ -585,6 +666,9 @@ AType alub(acons(AType lr, list[AType] lp, list[Keyword] lkw), acons(AType rr, l
         return avalue();
 }
 
+// TODO: bug! if acons is an instance of an ADT node, then it can not also be a function. The lub would be value().
+// If on the other hand acons is indeed a constructor function that builds a constructor tree, then this is correct
+// and we need to change the definition of `asubtype`
 AType alub(acons(AType lr, list[AType] lp, list[Keyword] lkw), afunc(AType rr, list[AType] rp, list[Keyword] rkw)) {
     if(size(lp) == size(rp)){
         return afunc(alub(lr,rr), alubList(lp, rp), lkw + (rkw - lkw)); // TODO do we want to propagate the keyword parameters?
@@ -592,6 +676,9 @@ AType alub(acons(AType lr, list[AType] lp, list[Keyword] lkw), afunc(AType rr, l
         return avalue();
 }
 
+// TODO: bug! if acons is an instance of an ADT node, then it can not also be a function. The lub would be value().
+// If on the other hand acons is indeed a constructor function that builds a constructor tree, then this is correct
+// and we need to change the definition of `asubtype`
 AType alub(afunc(AType lr, list[AType] lp, list[Keyword] lkw), acons(AType rr, list[AType] rp, list[Keyword] rkw)) {
     if(size(lp) == size(rp)){
         return afunc(alub(lr,rr), alubList(lp, rp), lkw + (rkw - lkw)); // TODO how do we want to propagate the keyword parameters?
@@ -599,6 +686,8 @@ AType alub(afunc(AType lr, list[AType] lp, list[Keyword] lkw), acons(AType rr, l
         return avalue();
 }
 
+// TODO: bug. here we see again that acons plays two roles at the same time, both as a type of tree nodes and
+// as the function that constructs the same tree nodes. 
 AType alub(acons(AType a,  list[AType] lp, list[Keyword] _), a2:aadt(str n, list[AType] rp, SyntaxRole _)) = alub(a,a2);
 AType alub(acons(AType _,  list[AType] _,  list[Keyword] _), anode(_)) = anode([]);
 
@@ -706,11 +795,20 @@ public AType aglb(arel(AType s), aset(AType t)) = aset(aglb(atuple(s), t));
 
 AType aglb(arel(atypeList(list[AType] l)), arel(atypeList(list[AType] r)))  = size(l) == size(r) ? arel(atypeList(aglbList(l, r))) : aset(avalue());
 
+@synopsis{Also for glb, an overloadedType is represented by the lub of its constituents.}
+@description{
+See ((asubtype)) for an explanation. An overloadedAType is not really a type in Rascal;
+it is an intermediate representation of overloaded functions (multiple functions with the same name) used by the type-checker and
+the compiler. In Rascal's type system, names or expressions that refer to multiple functions have the lub function-type of the
+respective functions. If we compute with that, then subtype and lub keep their algebraic properties as a finite lattice.
+}
 AType aglb(overloadedAType(overloads), AType t2)
-    = isEmpty(overloads) ? t2 : aglb((avoid() | alub(it, tp) | <_, _, tp> <- overloads), t2);
+    = aglb((\avoid() | alub(it, tp) | <_, _, tp> <- overloads), t2);
+    // = isEmpty(overloads) ? t2 : aglb((avoid() | alub(it, tp) | <_, _, tp> <- overloads), t2);
 
 AType aglb(AType t1, overloadedAType(overloads))
-    = isEmpty(overloads) ? t1 : aglb(t1, (avoid() | alub(it, tp)  | <_, _, tp> <- overloads));
+    = aglb(t1, (\avoid() | alub(it, tp) | <_, _, tp> <- overloads));
+    // = isEmpty(overloads) ? t1 : aglb(t1, (avoid() | alub(it, tp)  | <_, _, tp> <- overloads));
     
 public AType aglb(alist(AType s), alist(AType t)) = alist(aglb(s, t));  
 public AType aglb(alist(AType s), alrel(AType t)) = alist(aglb(s,atuple(t)));  
