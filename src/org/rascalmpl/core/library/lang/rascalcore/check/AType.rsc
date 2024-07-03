@@ -31,45 +31,6 @@ bool asubtype(tvar(s), AType r) {
 }
 
 @synopis{optimized definition of asubtype}
-@description{
-
-#### A note on overloadedAType
-
-Rascal does not have "disjunctive" types, but ((overloadedAType)) exists to represent choices
-during static checking between names that can have different types at compile-time. A good example
-is `int f(int i) = 1; int f(str x) = 2;` where the function name `f` has two types. One where the 
-first parameter matches only ints and the second where the first parameter only matches strs.
-
-The `overloadedAType` constructor contains necessary name resolution information (links) like `loc` 
-and `IdRole` which do not have anything to do with the type-system, but all the more with name resolution 
-and definitions of functions and other IdRoles. So this is essential bookkeeping information that 
-happens to be represented as an AType constructor.
-
-To make sure this intermediate bookkeeping does not break properties of the type-system (it being 
-a finite lattice for example), the definitions of subtype and lub have to be carefully considered. 
-In particular a disjunctive type could break transitivity of `subtype`: `a < b && b < c ==> a < c` 
-by judiciously adding and removing constituents to `a` and `c`, such that `!(a < c)` becomes true 
-even though `a < b` and `b < c` are still true. Efficient type inference without back-tracking, 
-using a search in the type lattice with `lub`, would become impossible if sub-type is not transitive 
-anymore. 
-
-Principles for `subtype` to remain correct in the presence of overloadedAType:
-* `subtype` must never depend on `loc` or `IdRole` information, only other `AType` information
-* `subtype` can never defer to identity in case of AType with parameter positions or type parameters (generic types). 
-Because that could break co- and contra-variance rules of other types nested here.
-* `subtype` can not select on of the "disjunctive" types and ignore the others, because that would
-introduce disjunctive types in earnest and break several properties that we depend on elsewhere.
-
-Single solution:
-* Always substitute any overloadedAType directly by the lub type that represents it:
-` overloadedAType(overloads) => (\avoid() | alub(tp) | <_, _, tp> <- overloads)`
-
-Here we see that:
-* `loc` and `IdRole` are properly forgotten
-* not one element is skipped or selected above the others (which would induce non-transitivity)
-* all type parameters of all ATypes are considered, by induction of the `alub` reducer.
-
-}
 default bool asubtype(AType l, AType r){
     switch(r){
         case l:     
