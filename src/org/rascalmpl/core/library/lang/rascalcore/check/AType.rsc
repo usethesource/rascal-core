@@ -132,10 +132,10 @@ bool asubtype(ac:acons(AType a, list[AType] ap, list[Keyword] _), AType b){
              return comparableList(ap, bp);
         case adt: aadt(str _, list[AType] _, _):
              return asubtype(a,adt);
-        // TODO: this is a big bug. Something is not both a tree node and the function that constructs that tree node.
+        // TODO: this is a possible bug. Something is not both a tree node and the function that constructs that tree node.
         case afunc(a,list[AType] bp, list[Keyword] _):
              return comparableList(ap, bp);
-        // TODO: or otherwise this is a big bug. Something is not both a tree node and the function that constructs that tree node.
+        // TODO: or otherwise this is a bug. Something is not both a tree node and the function that constructs that tree node.
         case anode(_):
              return true;
         // TODO: same here. is an acons a tree node or the function that constructs it? I'd say the first, but then its _not_ the latter.
@@ -184,7 +184,7 @@ bool asubtype(adt:aadt(str n, list[AType] l, SyntaxRole sr), AType b){
     fail;
 }
 
-// TODO: Bug: this is not the case. \start ryles must wrap something with a production to become start. The types are not substitutable.
+// TODO: probable bug: \start ryles must wrap something with a production to become start. The types are not substitutable.
 bool asubtype(\start(AType a), AType b) = asubtype(a, b);
 
 bool asubtype(i:\iter(AType s), AType b){
