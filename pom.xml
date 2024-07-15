@@ -161,7 +161,7 @@
             <plugin>
                 <groupId>org.rascalmpl</groupId>
                 <artifactId>rascal-maven-plugin</artifactId>
-                <version>0.27.5</version>
+                <version>0.28.0-BOOT1</version>
                 <configuration>
                     <generated>${project.build.directory}/generated-test-sources</generated>
                     <mainModule>GenerateTestSources</mainModule>
@@ -224,7 +224,7 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.13.1</version>
+            <version>0.13.3</version>
         </dependency>
         <dependency>
         	<groupId>io.usethesource</groupId>
@@ -239,7 +239,7 @@
         <dependency>
         	<groupId>org.rascalmpl</groupId>
         	<artifactId>rascal</artifactId>
-            <version>0.40.4</version>
+            <version>0.40.6</version>
         </dependency>
     </dependencies>
 </project>
