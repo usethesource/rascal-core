@@ -162,10 +162,12 @@
                 <groupId>org.rascalmpl</groupId>
                 <artifactId>rascal-maven-plugin</artifactId>
                 <version>0.28.1</version>
+                <!-- disabled for release
                 <configuration>
                     <generated>${project.build.directory}/generated-test-sources</generated>
                     <mainModule>GenerateTestSources</mainModule>
                 </configuration>
+
                 <executions>
                     <execution>
                         <id>it-compile</id>
@@ -175,6 +177,7 @@
                         </goals>
                     </execution>
                 </executions>
+                -->
             </plugin> 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
