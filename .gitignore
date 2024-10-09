@@ -2,3 +2,9 @@
 /target
 pom.xml.releaseBackup
 release.properties
+.externalToolBuilders/rascal_eclipse.rascal_builder.launch
+.externalToolBuilders/rascal_eclipse.term_builder.launch
+.settings/org.eclipse.ltk.core.refactoring.prefs
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tasks.json
