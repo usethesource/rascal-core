@@ -115,6 +115,7 @@
                         -Xmx2G
                         -Xss128m
                         -Dfile.encoding=UTF-8
+                        -Drascal.monitor.batch
                     </argLine>
                     <includes>
                         <include>**/*Tests.class</include>
