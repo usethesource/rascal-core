@@ -156,7 +156,7 @@
             <plugin>
                 <groupId>org.rascalmpl</groupId>
                 <artifactId>rascal-maven-plugin</artifactId>
-                <version>0.28.2-BOOT1</version>
+                <version>0.28.5</version>
                 <!-- disabled for release
                 <configuration>
                     <generated>${project.build.directory}/generated-test-sources</generated>
@@ -228,7 +228,7 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.14.3</version>
+            <version>0.14.4</version>
         </dependency>
         <dependency>
         	<groupId>io.usethesource</groupId>
