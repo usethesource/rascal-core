@@ -117,7 +117,9 @@ ModuleStatus getImportAndExtendGraph(str qualifiedModuleName, ModuleStatus ms){
                lm = getLastModified(m, ms.moduleLastModified, pcfg);
                if(lm == startOfEpoch || lm > timestampInBom) {
                     allImportsAndExtendsValid = false;
-                    if(tpl_uptodate() notin ms.status[m] && lm != timestampInBom && ms.compilerConfig.verbose){
+                    ms.status[m] += rsc_changed();
+                    ms.status[m] -= {tpl_uptodate(), checked()};
+                    if(ms.compilerConfig.verbose){
                         println("--- using <lm> (most recent) version of <m>,
                                 '    older <timestampInBom> version was used in previous check of <qualifiedModuleName>");
                     }
@@ -132,7 +134,8 @@ ModuleStatus getImportAndExtendGraph(str qualifiedModuleName, ModuleStatus ms){
                 mloc = getModuleLocation(qualifiedModuleName, pcfg);
                 if(mloc.extension != "rsc" || isModuleLocationInLibs(mloc, pcfg)) throw "No src or library module 1"; //There is only a tpl file available
             } catch value _:{
-                if(!isCompatibleBinary(tm, domain(localImportsAndExtends), ms)){
+                <compatible, ms> = isCompatibleBinaryLibrary(tm, domain(localImportsAndExtends), ms);
+                if(!compatible){
                     msg = error("Binary module `qualifiedModuleName` needs recompilation", |unknown:///|);
                     tm.messages += [msg];
                     ms.messages[qualifiedModuleName] ? [] += [msg];
@@ -147,12 +150,11 @@ ModuleStatus getImportAndExtendGraph(str qualifiedModuleName, ModuleStatus ms){
         }
         if(allImportsAndExtendsValid){
             ms.status[qualifiedModuleName] += {tpl_uptodate(), checked()}; //TODO: maybe check existence of generated java files
-
             ms.moduleLocs += tm.moduleLocs;
             ms.paths += tm.paths;
             ms.strPaths += {<qualifiedModuleName, pathRole, imp> | <str imp, PathRole pathRole> <- localImportsAndExtends };
             ms.status[qualifiedModuleName] += module_dependencies_extracted();
-            for(imp <- localImportsAndExtends<0>, module_dependencies_extracted() notin ms.status[imp]  ){
+            for(imp <- localImportsAndExtends<0>, isEmpty({module_dependencies_extracted()} & ms.status[imp])  ){
                 ms = getImportAndExtendGraph(imp, ms);
             }
             return ms;
@@ -172,9 +174,7 @@ ModuleStatus getImportAndExtendGraph(str qualifiedModuleName, ModuleStatus ms){
             ms = getImportAndExtendGraph(imp, ms);
         }
     } else {
-        if(rsc_not_found() notin ms.status[qualifiedModuleName]){
-            ms.status[qualifiedModuleName] += rsc_not_found();
-        }
+         ms.status[qualifiedModuleName] += rsc_not_found();
     }
 
     return ms;
@@ -192,27 +192,61 @@ ModuleStatus getInlineImportAndExtendGraph(Tree pt, RascalCompilerConfig ccfg){
     return complete(ms);
 }
 
+// Example: |rascal+function:///util/Math/round$d80e373d64c01979| ==> util::Math
 str getModuleFromLogical(loc l){
-    i = findFirst(l.path[1..], "/");
-    return i >= 0 ? l.path[1..i+1] : l.path[1..];
+    i = findLast(l.path[1..], "/");
+    res = i >= 0 ? l.path[1..i+1] : l.path[1..];
+    return replaceAll(res, "/", "::");
 }
 
-bool isCompatibleBinary(TModel lib, set[str] otherImportsAndExtends, ModuleStatus ms){
-
-    provides = {<m , l> | l <- domain(lib.logical2physical), m := getModuleFromLogical(l) };
-    requires = {};
-    for(m <- otherImportsAndExtends){
+// Is what library module lib provides compatible with all uses in the modules libUsers?
+tuple[bool, ModuleStatus] isCompatibleBinaryLibrary(TModel lib, set[str] libUsers, ModuleStatus ms){
+    libName = lib.modelName;
+    libProvides = domain(lib.logical2physical);
+    libProvidesModules = { getModuleFromLogical(l) | l <- libProvides };
+    usersRequire = {};
+    for(m <- libUsers){
        <found, tm, ms> = getTModelForModule(m, ms);
        if(found){
-           requires += {<m , l> | l <- domain(tm.logical2physical), m := getModuleFromLogical(l) };
+           usersRequire += domain(tm.logical2physical);
        }
     }
+    usersRequireFromLib = { l | l <- usersRequire, getModuleFromLogical(l) in libProvidesModules };
 
-    if(isEmpty(requires - provides)){
-        return true;
+    if(usersRequireFromLib <= libProvides){
+        //println("isCompatibleBinaryLibrary <libName>: satisfied");
+        return <true, ms>;
     } else {
-        println("isCompatibleBinary, unsatisfied: <requires - provides>");
-        return false;
+        //println("isCompatibleBinaryLibrary, <libName> unsatisfied: <usersRequireFromLib - libProvides>");
+        return <false, ms>;
+    }
+}
+
+tuple[bool, ModuleStatus] importsAndExtendsAreBinaryCompatible(TModel tm, set[str] importsAndExtends, ModuleStatus ms){
+    moduleName = tm.modelName;
+    physical2logical = invertUnique(tm.logical2physical);
+
+    modRequires = { lg | l <- range(tm.useDef),
+                        physical2logical[l]?, lg := physical2logical[l],
+                        moduleName !:= getModuleFromLogical(lg) };
+    provided = {};
+    if(!isEmpty(modRequires)){
+        for(m <- importsAndExtends){
+            <found, tm, ms> = getTModelForModule(m, ms);
+            if(found){
+                provided += domain(tm.logical2physical);
+            }
+        }
+    }
+
+    //println("<moduleName> requires <modRequires>");
+
+    if(isEmpty(modRequires - provided)){
+        //println("importsAndExtendsAreBinaryCompatible <moduleName>: satisfied");
+        return <true, ms>;
+    } else {
+        //println("importsAndExtendsAreBinaryCompatible, <moduleName> unsatisfied: <modRequires - provided>");
+        return <false, ms>;
     }
 }
 
@@ -290,6 +324,28 @@ tuple[map[str,TModel], ModuleStatus] prepareForCompilation(set[str] component, m
     }
     return <transient_tms, ms>;
 }
+rel[str,datetime,PathRole] makeBom(str qualifiedModuleName, set[str] imports, set[str] extends,  ModuleStatus ms){
+    map[str,datetime] moduleLastModified = ms.moduleLastModified;
+    pcfg = ms.pathConfig;
+    return   { < m, getLastModified(m, moduleLastModified, pcfg), importPath() > | m <- imports }
+           + { < m, getLastModified(m, moduleLastModified, pcfg), extendPath() > | m <- extends }
+           + { <qualifiedModuleName, getLastModified(qualifiedModuleName, moduleLastModified, pcfg), importPath() > };
+}
+void updateBOM(str qualifiedModuleName, set[str] imports, set[str] extends,  ModuleStatus ms){
+    <found, tm, ms> = getTModelForModule(qualifiedModuleName, ms);
+    if(found){
+        newBom = makeBom(qualifiedModuleName, imports, extends, ms);
+        if(newBom != tm.store[key_bom]){
+            tm.store[key_bom] = newBom;
+            ms.status[qualifiedModuleName] -= tpl_saved();
+            addTModel(qualifiedModuleName, tm, ms);
+
+            if(ms.compilerConfig.logWrittenFiles) println("Updated BOM: <qualifiedModuleName>");
+        }
+    } else{
+        println("Could not update BOM of <qualifiedModuleName>");
+    }
+}
 
 ModuleStatus doSaveModule(set[str] component, map[str,set[str]] m_imports, map[str,set[str]] m_extends, ModuleStatus ms, map[str,loc] moduleScopes, map[str, TModel] transient_tms, RascalCompilerConfig compilerConfig){
     map[str,datetime] moduleLastModified = ms.moduleLastModified;
@@ -315,15 +371,14 @@ ModuleStatus doSaveModule(set[str] component, map[str,set[str]] m_imports, map[s
     for(qualifiedModuleName <- component){
         start_save = cpuTime();
         tm = transient_tms[qualifiedModuleName];
-        try {
+        //try {
             mscope = getModuleScope(qualifiedModuleName, moduleScopes, pcfg);
             <found, tplLoc> = getTPLWriteLoc(qualifiedModuleName, pcfg);
+
             imports = m_imports[qualifiedModuleName];
             extends = m_extends[qualifiedModuleName];
 
-            bom = { < m, getLastModified(m, moduleLastModified, pcfg), importPath() > | m <- imports }
-                + { < m, getLastModified(m, moduleLastModified, pcfg), extendPath() > | m <- extends }
-                + { <qualifiedModuleName, getLastModified(qualifiedModuleName, moduleLastModified, pcfg), importPath() > };
+            bom = makeBom(qualifiedModuleName, imports, extends, ms);
 
             extendedModuleScopes = {getModuleScope(m, moduleScopes, pcfg) | str m <- extends, checked() in ms.status[m]};
             extendedModuleScopes += {*tm.paths[ems,importPath()] | ems <- extendedModuleScopes}; // add imports of extended modules
@@ -395,57 +450,15 @@ ModuleStatus doSaveModule(set[str] component, map[str,set[str]] m_imports, map[s
                     case kwField(AType atype, str fieldName, str definingModule, Expression _defaultExp) => kwField(atype, fieldName, definingModule)
                     case loc l : if(!isEmpty(l.fragment)) insert l[fragment=""];
                  };
-            m1.logical2physical = tm.logical2physical;
-            //println("Import, tmodel:"); iprintln(m1);
-            m1 = convertTModel2LogicalLocs(m1, ms.tmodels);
 
-            ////TODO temporary check: are external locations present in the TModel? If so, throw exception
-            //
-            //result = "";
-            //
-            //void checkPhysical(value v, str label){
-            //    visit(v){
-            //        case loc l:
-            //                if(!(isContainedInComponentScopes(l) || l == |global-scope:///| || contains(l.scheme, "rascal+")))
-            //                    result += "<label>, outside <qualifiedModuleName>: <l>\n";
-            //    }
-            //}
-            //checkPhysical(m1.moduleLocs, "moduleLocs");
-            //checkPhysical(m1.facts, "facts");
-            //checkPhysical(m1.specializedFacts, "specializedFacts");
-            //checkPhysical(m1.defines, "defines");
-            //checkPhysical(m1.definitions, "definitions");
-            //checkPhysical(m1.scopes, "scopes");
-            //checkPhysical(m1.store, "store");
-            //checkPhysical(m1.paths, "paths");
-            //checkPhysical(m1.useDef, "useDef");
-            //
-            //if(!isEmpty(result)){
-            //    println("------------- <qualifiedModuleName>:
-            //            '<result>");
-            //    iprintln(m1, lineLimit=10000);
-            //    throw "checkPhysical failed, see above";
-            //}
-
-            ms.status[qualifiedModuleName] += tpl_saved();
-            try {
-                writeBinaryValueFile(tplLoc, m1);
-                if(compilerConfig.logWrittenFiles) println("Written: <tplLoc>");
-                save_time = (cpuTime() - start_save)/1000000;
-                if(compilerConfig.verbose) {
-                    save_time = (cpuTime() - start_save)/1000000;
-                    println("Saved TPL .. <qualifiedModuleName> in <save_time> ms");
-                }
-            } catch value e: {
-                throw "Cannot write TPL file <tplLoc>, reason: <e>";
-            }
+            ms.status[qualifiedModuleName] -= {tpl_saved()};
             ms = addTModel(qualifiedModuleName, m1, ms);
-            //println("doSaveModule"); iprintln(m1);
+            //println("doSaveModule"); iprintln(m1.logical2physical);
 
-        } catch value e: {
-            ms.messages[qualifiedModuleName] ? [] += tm.messages + [error("Could not save .tpl file for `<qualifiedModuleName>`, reason: <e>", |unknown:///|(0,0,<0,0>,<0,0>))];
-            return ms;
-        }
+        // } catch value e: {
+        //     ms.messages[qualifiedModuleName] ? [] += tm.messages + [error("Could not save .tpl file for `<qualifiedModuleName>`, reason: <e>", |unknown:///|(0,0,<0,0>,<0,0>))];
+        //     return ms;
+        // }
     }
     return ms;
 }
