@@ -18,6 +18,8 @@ import lang::rascalcore::check::RascalConfig;
 
 import lang::rascalcore::check::Checker;
 
+bool verbose = false;
+
 PathConfig pathConfigForTesting() {
   return getDefaultTestingPathConfig();
 }
@@ -32,7 +34,7 @@ bool matches(str subject, str pat){
 
 tuple[str,str] extractModuleNameAndBody(str moduleText){
 	txt = trim(moduleText);
-	if(/module\s*<nm:[A-Z][A-Za-z0-9]*>\s*<body:.*$>/s := txt){
+	if(/module\s*<nm:[A-Z][A-Za-z0-9:]*>\s*<body:.*$>/s := txt){
 		return <nm, body>;
 	}
 	throw "Cannot extract module name from <moduleText>";
@@ -60,6 +62,12 @@ loc writeModule(str moduleText){
     return mloc;
 }
 
+void writeModules(str modules...){
+	for(mname <- modules){
+		writeModule(mname);
+	}
+}
+
 void removeModule(str mname){
 	pcfg = getDefaultTestingPathConfig();
 	name = cleanName(mname);
@@ -78,11 +86,10 @@ set[Message] getAllMessages(ModuleStatus r)
 
 ModuleStatus checkStatements(str stmts) {
 	mloc = composeModule(stmts);
-   	return rascalTModelForLocs([mloc], rascalCompilerConfig(pathConfigForTesting()), dummy_compile1);
+   	return rascalTModelForLocs([mloc], rascalCompilerConfig(pathConfigForTesting())[infoModuleChecked=true], dummy_compile1);
 }
 
 bool checkStatementsAndFilter(str stmts, list[str] expected) {
-	bool verbose=false;
      msgs = getAllMessages(checkStatements(stmts));
 	 if (verbose) {
      	println(msgs);
@@ -93,18 +100,28 @@ bool checkStatementsAndFilter(str stmts, list[str] expected) {
      }
      throw abbrev("<msgs>");
 }
-
-bool checkModuleAndFilter(str moduleText, list[str] expected) {
-	bool verbose=false;
+bool checkModuleAndFilter(str moduleText, list[str] expected, bool matchAll = false, bool errorsAllowed = true, PathConfig pathConfig = pathConfigForTesting()) {
 	mloc = writeModule(moduleText);
-    msgs = getAllMessages(rascalTModelForLocs([mloc], rascalCompilerConfig(pathConfigForTesting()), dummy_compile1));
+	return checkModuleAndFilter(mloc, expected, matchAll=matchAll, errorsAllowed=errorsAllowed, pathConfig=pathConfig);
+}
+bool checkModuleAndFilter(loc mloc, list[str] expected, bool matchAll = false, bool errorsAllowed = true, PathConfig pathConfig = pathConfigForTesting()) {
+    msgs = getAllMessages(rascalTModelForLocs([mloc], rascalCompilerConfig(pathConfig)[infoModuleChecked=true], dummy_compile1));
 	if (verbose) {
      	println(msgs);
 	 }
+	 if(!errorsAllowed && !isEmpty(msgs) && any(error(_,_) <- msgs)) return false;
+	 matched = {};
      for(eitem <- msgs, str exp <- expected){
-         if(matches(eitem.msg, exp))
+         if(matches(eitem.msg, exp)){
+		 	if(matchAll){
+				matched += eitem.msg;
+			} else
                return true;
+		 }
      }
+	 if(matchAll) {
+		return all(e <- expected, e in matched);
+	 }
      throw abbrev("<msgs>");
 }
 
@@ -115,17 +132,18 @@ bool checkOK(str stmts) {
      throw errors;
 }
 
-bool checkModuleOK(loc moduleToCheck) {
-     errors = getErrorMessages(rascalTModelForLocs([moduleToCheck], rascalCompilerConfig(pathConfigForTesting()), dummy_compile1));
+bool checkModuleOK(loc moduleToCheck, PathConfig pathConfig = pathConfigForTesting()) {
+     errors = getErrorMessages(rascalTModelForLocs([moduleToCheck], rascalCompilerConfig(pathConfig)[infoModuleChecked=true], dummy_compile1));
      if(size(errors) == 0)
         return true;
      throw abbrev("<errors>");
 }
 
-bool checkModuleOK(str moduleText){
+bool checkModuleOK(str moduleText, PathConfig pathConfig = pathConfigForTesting()){
 	<mname, mbody> = extractModuleNameAndBody(moduleText);
+	pathConfig.srcs += pathConfigForTesting().srcs;
 	mloc = writeModule(moduleText);
-	return checkModuleOK(mloc);
+	return checkModuleOK(mloc, pathConfig=pathConfig);
 }
 
 // bool checkModuleOK(str mbody){
@@ -367,3 +385,26 @@ bool unsupportedInModule(str moduleText)
 
 bool unsupported(str stmts) =
     checkStatementsAndFilter(stmts, unsupportedMsgs);
+
+// ---- expectChecks ----------------------------------------------------------
+
+bool expectReChecks(str moduleText, list[str] moduleNames, PathConfig pathConfig = pathConfigForTesting()){
+	mloc = writeModule(moduleText);
+	pathConfig.srcs +=  pathConfigForTesting().srcs;
+	return expectReChecks(mloc, moduleNames, pathConfig=pathConfig);
+}
+
+bool expectReChecks(loc mloc, list[str] moduleNames, PathConfig pathConfig = pathConfigForTesting()){
+	msgs = [ "Checked <nm>" | nm <- moduleNames ];
+	return checkModuleAndFilter(mloc, msgs, matchAll=true, errorsAllowed=false, pathConfig = pathConfig);
+}
+
+bool expectReChecksWithErrors(str moduleText, list[str] moduleNames, PathConfig pathConfig = pathConfigForTesting()){
+	mloc = writeModule(moduleText);
+	return return expectReChecksWithErrors(mloc, moduleNames, pathConfig=pathConfig);
+}
+
+bool expectReChecksWithErrors(loc mloc, list[str] moduleNames, PathConfig pathConfig = pathConfigForTesting()){
+	msgs = [ "Checked <nm>" | nm <- moduleNames ];
+	return checkModuleAndFilter(mloc, msgs, matchAll=true, errorsAllowed=true, pathConfig=pathConfig);
+}
