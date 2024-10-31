@@ -320,20 +320,20 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
         if(decl is abstract){
             if("javaClass" in tagsMap){
                 if("java" notin modifiers){
-                    c.report(warning(decl.signature, "Missing modifier `java`"));
+                    c.report(warning(decl.signature, "Missing modifier `java`", fixes=addJavaModifier(decl)));
                 }
                 if("test" in modifiers){
                     c.report(warning(decl.signature, "Modifier `test` cannot be used for Java functions"));
                 }
             } else {
                 c.report(warning(decl, "Empty function body"));
-             }
+            }
         } else {
             if("javaClass" in tagsMap){
-                c.report(warning(decl.signature, "Redundant tag `javaClass`"));
+                c.report(warning(decl.signature, "Redundant tag `javaClass`", fixes=removeJavaClass(decl)));
             }
             if("java" in modifiers){
-                c.report(warning(decl.signature, "Redundant modifier `java`"));
+                c.report(warning(decl.signature, "Redundant modifier `java`", fixes=removeJavaModifier(decl)));
             }
         }
 
@@ -727,3 +727,20 @@ void collect (current: (Declaration) `<Tags tags> <Visibility visibility> alias 
 
 
 }
+
+/* Here are some quickfixes used above */
+
+CodeAction addJavaModifier(FunctionDeclaration decl) = action(
+    title="add `java` modifier",
+    edits=[changed(decl.top, [replace(decl.signature.modifiers@\loc, "java <decl.signature.modifiers>")])]
+);
+    
+CodeAction removeJavaModifier(FunctionDeclaration decl) = action(
+    title="remove `java` modifier",
+    edits=[changed(decl.top, [replace(l@\loc, "") | /l:(FunctionModifier) `java` := decl])]
+);
+
+CodeAction removeJavaClass(FunctionDeclaration decl) = action(
+    title="remove @javaClass tag",
+    edits=[changed(decl.top, [replace(l@\loc, "") | /l:(Tag) `@javaClass<TagString _>` := decl])]
+);
