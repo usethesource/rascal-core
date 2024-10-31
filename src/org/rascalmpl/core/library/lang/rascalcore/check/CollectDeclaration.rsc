@@ -31,6 +31,7 @@ import Set;
 import String;
 
 import util::Reflective;
+import util::IDEServices;
 
 // ---- Utilities -------------------------------------------------------------
 
@@ -320,7 +321,7 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
         if(decl is abstract){
             if("javaClass" in tagsMap){
                 if("java" notin modifiers){
-                    c.report(warning(decl.signature, "Missing modifier `java`", fixes=addJavaModifier(decl)));
+                    c.report(warning(decl.signature, "Missing modifier `java`", fixes=[addJavaModifier(decl)]));
                 }
                 if("test" in modifiers){
                     c.report(warning(decl.signature, "Modifier `test` cannot be used for Java functions"));
@@ -330,10 +331,10 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
             }
         } else {
             if("javaClass" in tagsMap){
-                c.report(warning(decl.signature, "Redundant tag `javaClass`", fixes=removeJavaClass(decl)));
+                c.report(warning(decl.signature, "Redundant tag `javaClass`", fixes=[removeJavaClass(decl)]));
             }
             if("java" in modifiers){
-                c.report(warning(decl.signature, "Redundant modifier `java`", fixes=removeJavaModifier(decl)));
+                c.report(warning(decl.signature, "Redundant modifier `java`", fixes=[removeJavaModifier(decl)]));
             }
         }
 
