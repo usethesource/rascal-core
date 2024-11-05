@@ -335,11 +335,11 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
                 }
             } 
             else if ("java" in modifiers && "javaClass" notin tagsMap) {
-                c.report(warning(decl.signature, "Missing @javaClass tag with Java function"), fixes=javaClassProposals(decl));
+                c.report(warning(decl.signature, "Missing @javaClass tag with Java function", fixes=javaClassProposals(decl)));
             } 
             else {
-                c.report(warning(decl, "Empty function body, without a `java` modifier or @javaClass tag."),
-                    fixes=[addJavaModifier(decl), *javaClassProposals(decl)]);
+                c.report(warning(decl, "Empty function body, without a `java` modifier or @javaClass tag.",
+                    fixes=[addJavaModifier(decl), *javaClassProposals(decl)]));
             }
         } else {
             if("javaClass" in tagsMap){
@@ -757,6 +757,6 @@ CodeAction removeJavaClass(FunctionDeclaration decl) = action(
 );
 
 list[CodeAction] javaClassProposals(FunctionDeclaration decl) = [
-    action(title="add missing <t>", edits=[replace(decl.tags@\loc.top(decl.tags@\loc.offset, 0), "<t>\n")])
+    action(title="add missing <t>", edits=[changed(decl@\loc.top, [replace(decl.tags@\loc.top(decl.tags@\loc.offset, 0), "<t>\n")])])
     | /t:(Tag) `@javaClass<TagString _>` := parseModule(decl@\loc.top)
 ];
