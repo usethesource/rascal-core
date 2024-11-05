@@ -757,6 +757,6 @@ CodeAction removeJavaClass(FunctionDeclaration decl) = action(
 );
 
 list[CodeAction] javaClassProposals(FunctionDeclaration decl) = [
-    action(title="add missing <a>", edits=[changed(decl@\loc.top, [replace(decl.tags@\loc(decl.tags@\loc.offset, 0), "<a>\n")])])
+    action(title="add missing <a>", edits=[changed(decl@\loc.top, [replace(decl.tags@\loc(decl.tags@\loc.offset, 0, decl.tags@\loc.begin, decl.tags@\loc.begin), "<a>\n")])])
     | str a <- sort({"<t>" | /t:(Tag) `@javaClass<TagString _>` := parseModule(decl@\loc.top)})
 ];
