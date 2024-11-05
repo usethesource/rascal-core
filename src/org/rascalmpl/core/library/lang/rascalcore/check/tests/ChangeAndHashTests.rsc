@@ -13,12 +13,14 @@ import Map;
 import Set;
 import lang::rascalcore::check::ATypeBase;
 
+import lang::rascalcore::check::tests::StaticTestingUtils;
+
 TModel check(str moduleName, RascalCompilerConfig compilerConfig){
 
-        ModuleStatus result = rascalTModelForNames([moduleName],
+        ModuleStatus ms = rascalTModelForNames([moduleName],
                                                   compilerConfig,
                                                   dummy_compile1);
-       <found, tm, result> = getTModelForModule(moduleName, result);
+       <found, tm, ms> = getTModelForModule(moduleName, ms);
        if(found && verbose && !isEmpty(tm.messages)){
             iprintln(tm.messages);
        }
@@ -216,6 +218,41 @@ test bool funAdded()
 test bool funDeleted()
     = expectSuperset("int f(int n) = n + 1; int g(int n) = n + 2;",
                     "int f(int n) = n + 1;");
+
+test bool nestedCloneOK() = checkOK("
+   void foo(str _){
+        int bar(){
+            return 1;
+        }
+        bar();
+   }
+
+   void foo(int _){
+        int bar(){
+            return 1;
+        }
+        bar();
+   }");
+
+test bool clonesNotOK() = unexpectedDeclarationInModule("
+    module TwoBars
+        int bar(int _){
+            return 1;
+        }
+        int bar(int _){
+            return 2;
+        }
+    ");
+
+test bool nearClonesDifferentParameterNameOK() = checkModuleOK("
+    module TwoBars
+        int bar(int a){
+            return 1;
+        }
+        int bar(int b){
+            return 2;
+        }
+    ");
 
 // Data declarations
 
