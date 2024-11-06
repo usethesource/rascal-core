@@ -228,7 +228,7 @@
         <dependency>
             <groupId>org.rascalmpl</groupId>
             <artifactId>typepal</artifactId>
-            <version>0.14.8-SNAPSHOT</version>
+            <version>0.14.8-BOOT1</version>
         </dependency>
         <dependency>
         	<groupId>io.usethesource</groupId>
@@ -243,7 +243,7 @@
         <dependency>
         	<groupId>org.rascalmpl</groupId>
         	<artifactId>rascal</artifactId>
-            <version>0.40.13-BOOT2</version>
+            <version>0.40.16</version>
         </dependency>
     </dependencies>
 </project>
