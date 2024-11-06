@@ -31,6 +31,7 @@ import Set;
 import String;
 
 import util::Reflective;
+import util::IDEServices;
 
 // ---- Utilities -------------------------------------------------------------
 
@@ -327,20 +328,25 @@ void collect(current: (FunctionDeclaration) `<FunctionDeclaration decl>`, Collec
         if(decl is abstract){
             if("javaClass" in tagsMap){
                 if("java" notin modifiers){
-                    c.report(warning(decl.signature, "Missing modifier `java`"));
+                    c.report(warning(decl.signature, "Missing modifier `java`", fixes=[addJavaModifier(decl)]));
                 }
                 if("test" in modifiers){
                     c.report(warning(decl.signature, "Modifier `test` cannot be used for Java functions"));
                 }
-            } else {
-                c.report(warning(decl, "Empty function body"));
-             }
+            } 
+            else if ("java" in modifiers && "javaClass" notin tagsMap) {
+                c.report(warning(decl.signature, "Missing @javaClass tag with Java function", fixes=javaClassProposals(decl)));
+            } 
+            else {
+                c.report(warning(decl, "Empty function body, without a `java` modifier or @javaClass tag.",
+                    fixes=[addJavaModifier(decl), *javaClassProposals(decl)]));
+            }
         } else {
             if("javaClass" in tagsMap){
-                c.report(warning(decl.signature, "Redundant tag `javaClass`"));
+                c.report(warning(decl.signature, "Redundant tag `javaClass`", fixes=[removeJavaClass(decl)]));
             }
             if("java" in modifiers){
-                c.report(warning(decl.signature, "Redundant modifier `java`"));
+                c.report(warning(decl.signature, "Redundant modifier `java`", fixes=[removeJavaModifier(decl)]));
             }
         }
 
@@ -732,3 +738,28 @@ void collect (current: (Declaration) `<Tags tags> <Visibility visibility> alias 
 
 
 }
+
+/* Here are some quickfixes used above */
+
+CodeAction addJavaModifier(FunctionDeclaration decl) = action(
+    title="add `java` modifier",
+    edits=[changed([insertBefore(decl.signature.modifiers@\loc, "java")])]
+);
+    
+CodeAction removeJavaModifier(FunctionDeclaration decl) = action(
+    title="remove `java` modifier",
+    edits=[changed([delete(l@\loc) | /l:(FunctionModifier) `java` := decl])]
+);
+
+CodeAction removeJavaClass(FunctionDeclaration decl) = action(
+    title="remove <l>",
+    edits=[changed([delete(l@\loc) | /l:(Tag) `@javaClass<TagString _>` := decl])]
+);
+
+list[CodeAction] javaClassProposals(FunctionDeclaration decl) = [
+    action(
+        title="add missing <a>", 
+        edits=[changed([insertBefore(decl.tags@\loc, "<a>", separator="\n")])]
+    )
+    | str a <- sort({"<t>" | /t:(Tag) `@javaClass<TagString _>` := parseModule(decl@\loc.top)})
+];
