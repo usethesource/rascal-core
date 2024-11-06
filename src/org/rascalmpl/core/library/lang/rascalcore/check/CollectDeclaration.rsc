@@ -743,20 +743,23 @@ void collect (current: (Declaration) `<Tags tags> <Visibility visibility> alias 
 
 CodeAction addJavaModifier(FunctionDeclaration decl) = action(
     title="add `java` modifier",
-    edits=[changed(decl@\loc.top, [replace(decl.signature.modifiers@\loc, "java <decl.signature.modifiers>")])]
+    edits=[changed([insertBefore(decl.signature.modifiers@\loc, "java")])]
 );
     
 CodeAction removeJavaModifier(FunctionDeclaration decl) = action(
     title="remove `java` modifier",
-    edits=[changed(decl@\loc.top, [replace(l@\loc, "") | /l:(FunctionModifier) `java` := decl])]
+    edits=[changed([delete(l@\loc) | /l:(FunctionModifier) `java` := decl])]
 );
 
 CodeAction removeJavaClass(FunctionDeclaration decl) = action(
     title="remove @javaClass tag",
-    edits=[changed(decl@\loc.top, [replace(l@\loc, "") | /l:(Tag) `@javaClass<TagString _>` := decl])]
+    edits=[changed([delete(l@\loc) | /l:(Tag) `@javaClass<TagString _>` := decl])]
 );
 
 list[CodeAction] javaClassProposals(FunctionDeclaration decl) = [
-    action(title="add missing <a>", edits=[changed(decl@\loc.top, [replace(decl.tags@\loc(decl.tags@\loc.offset, 0, decl.tags@\loc.begin, decl.tags@\loc.begin), "<a>\n")])])
+    action(
+        title="add missing <a>", 
+        edits=[changed([insertBefore(decl.tags@\loc, "<a>", separator="\n")])]
+    )
     | str a <- sort({"<t>" | /t:(Tag) `@javaClass<TagString _>` := parseModule(decl@\loc.top)})
 ];
