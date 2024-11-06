@@ -752,7 +752,7 @@ CodeAction removeJavaModifier(FunctionDeclaration decl) = action(
 );
 
 CodeAction removeJavaClass(FunctionDeclaration decl) = action(
-    title="remove @javaClass tag",
+    title="remove <l>",
     edits=[changed([delete(l@\loc) | /l:(Tag) `@javaClass<TagString _>` := decl])]
 );
 
