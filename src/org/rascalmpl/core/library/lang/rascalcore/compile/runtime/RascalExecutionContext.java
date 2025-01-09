@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.URISyntaxException;
-
 import org.rascalmpl.core.library.lang.rascalcore.compile.runtime.traverse.Traverse;
 import org.rascalmpl.debug.IRascalMonitor;
 import org.rascalmpl.ideservices.BasicIDEServices;
@@ -22,7 +22,6 @@ import org.rascalmpl.uri.project.ProjectURIResolver;
 import org.rascalmpl.uri.project.TargetURIResolver;
 import org.rascalmpl.values.IRascalValueFactory;
 import org.rascalmpl.values.ValueFactoryFactory;
-
 import io.usethesource.vallang.ISourceLocation;
 import io.usethesource.vallang.IValueFactory;
 import io.usethesource.vallang.type.TypeFactory;
@@ -32,10 +31,8 @@ public class RascalExecutionContext implements IRascalMonitor {
 	private String currentModuleName;
 	private $RascalModule module;
 	private final IRascalValueFactory $RVF;
-	private final InputStream instream;
-	private final PrintStream outstream;
+	private final Reader instream;
 	private final PrintWriter outwriter;
-	private final PrintStream errstream;
 	private final PrintWriter errwriter;
 	private final PathConfig pcfg;
 	private final IDEServices ideServices;
@@ -48,9 +45,9 @@ public class RascalExecutionContext implements IRascalMonitor {
 	private RascalSearchPath rascalSearchPath;
 
 	public RascalExecutionContext(
-			InputStream instream,
-			PrintStream outstream,
-			PrintStream errstream, 
+			Reader instream,
+			PrintWriter outWriter,
+			PrintWriter errWriter, 
 			PathConfig pcfg, 
 			IDEServices ideServices,
 			Class<?> clazz
@@ -59,10 +56,8 @@ public class RascalExecutionContext implements IRascalMonitor {
 		currentModuleName = "UNDEFINED";
 		
 		this.instream = instream;
-		this.outstream = outstream;
-		this.outwriter = new PrintWriter(outstream);
-		this.errstream = errstream;
-		this.errwriter = new PrintWriter(errstream);
+		this.outwriter = outWriter;
+		this.errwriter = errWriter;
 		
 		this.pcfg = pcfg == null ? new PathConfig() : pcfg;
 		this.ideServices = ideServices == null ? new BasicIDEServices(errwriter, this) : ideServices;
@@ -115,15 +110,11 @@ public class RascalExecutionContext implements IRascalMonitor {
 	
 	public Traverse getTraverse() { return $TRAVERSE; }
 	
-	public InputStream getInStream() { return instream; }
+	public Reader getInStream() { return instream; }
 	
 	public PrintWriter getOutWriter() { return outwriter; }
-	
-	public PrintStream getOutStream() { return outstream; }
 
 	public PrintWriter getErrWriter() { return errwriter; }
-	
-	public PrintStream getErrStream() { return errstream; }
 
 	public PathConfig getPathConfig() { return pcfg; }
 	
@@ -151,7 +142,7 @@ public class RascalExecutionContext implements IRascalMonitor {
 	
 	@Override
 	public int jobEnd(String name, boolean succeeded) {
-		errstream.println(name + " ends");
+		errwriter.println(name + " ends");
 		return 0;
 		//return ideServices.jobEnd(name, succeeded);
 	}
@@ -164,7 +155,7 @@ public class RascalExecutionContext implements IRascalMonitor {
 
 	@Override
 	public void jobStart(String name, int workShare, int totalWork) {
-		errstream.println(name + " starts");
+		errwriter.println(name + " starts");
 		//ideServices.jobStart(name, workShare, totalWork);
 	}
 
@@ -176,14 +167,14 @@ public class RascalExecutionContext implements IRascalMonitor {
 
 	@Override
 	public boolean jobIsCanceled(String name) {
-		errstream.println(name + " canceled");
+		errwriter.println(name + " canceled");
 		return true;
 		//return ideServices.jobIsCanceled(name);
 	}
 
 	@Override
 	public void warning(String message, ISourceLocation src) {
-		errstream.println(message);
+		errwriter.println(message);
 		//ideServices.warning(message,  src);;
 	}
 	
