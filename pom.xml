@@ -66,6 +66,9 @@
                 <includes>
                     <include>**/*.constants</include>
                 </includes>
+                <excludes>
+                    <exclude>test-annotations/**/*</exclude>
+                </excludes>
             </testResource>
         </testResources>
         <plugins>
@@ -230,16 +233,11 @@
             <artifactId>typepal</artifactId>
             <version>0.15.0</version>
         </dependency>
-        <dependency>
-        	<groupId>io.usethesource</groupId>
-        	<artifactId>vallang</artifactId>
-        	<version>0.15.1</version>
-        </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.8.2</version>
-        </dependency>
+        </dependency> -->
         <dependency>
         	<groupId>org.rascalmpl</groupId>
         	<artifactId>rascal</artifactId>
