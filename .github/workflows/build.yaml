@@ -36,6 +36,12 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Disable some local only tests
+        run: |
+          echo "These test require local repo setup, for now we delete them before running the test"
+          rm src/org/rascalmpl/core/library/lang/rascalcore/check/tests/BinaryDependencyTests.rsc
+          rm src/org/rascalmpl/core/library/lang/rascalcore/check/tests/ChangeScenarioTests.rsc
+
       - name: Compile, Generate and Test (never fails)
         run: mvn -B -Dmaven.test.failure.ignore -Drascal.test.memory=4  test
 
