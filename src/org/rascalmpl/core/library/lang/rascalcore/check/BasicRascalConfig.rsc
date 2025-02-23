@@ -103,6 +103,9 @@ void storeAllowUseBeforeDef(Tree container, list[Tree] allowedParts, Collector c
     c.push(key_allow_use_before_def, <getLoc(container), cover([getLoc(allowed) | allowed <- allowedParts])>);
 }
 
+bool isAlreadyDefined(str id,  Tree useOrDef, Collector c)
+    = c.isAlreadyDefined(id, useOrDef, {moduleVariableId()});
+
 public str key_bom = "bill_of_materials";
 public str key_current_module = "current_module";
 public str key_pathconfig = "pathconfig";

@@ -685,6 +685,9 @@ private void checkAssignment(Statement current, (Assignable) `<QualifiedName nam
     if(!isEmpty(qualifier)){
         c.useQualified([qualifier, base], name, {variableId()}, {moduleId()});
     } else {
+        if(isAlreadyDefined("<name>", name, c)){
+            c.use(name, variableRoles);
+        } else 
         if(operator == "="){
            c.define(base, variableId(), name, defLub([statement],
             AType(Solver s){

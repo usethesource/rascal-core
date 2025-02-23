@@ -494,8 +494,8 @@ void collect(current:(Sym) `& <Nonterminal n>`, Collector c){
     pname = prettyPrintName("<n>");
 
     if(<true, bool closed> := defineOrReuseTypeParameters(c)){
-        if(c.isAlreadyDefined(pname, n)){
-            c.use(n, {typeVarId() });
+        if(isAlreadyDefined(pname, n, c)){
+            c.use(n, {typeVarId()});
             //println("Use <pname> at <current@\loc>");
         } else {
             c.define(pname, typeVarId(), n, defType(aparameter(pname,treeType, closed=closed)));
@@ -849,7 +849,7 @@ void collect(current:(TypeVar) `& <Name n>`, Collector c){
     pname = prettyPrintName(n);
 
     if(<true, bool closed> := defineOrReuseTypeParameters(c)){
-        if(c.isAlreadyDefined(pname, n)){
+        if(isAlreadyDefined(pname, n, c)){
             c.use(n, {typeVarId() });
             //if(debugTP)println("Use <pname> at <current@\loc>");
         } else {
@@ -895,7 +895,7 @@ void collect(current: (TypeVar) `& <Name n> \<: <Type tp>`, Collector c){
     pname = prettyPrintName(n);
 
     if(<true, bool closed> := defineOrReuseTypeParameters(c)){
-        if(c.isAlreadyDefined(pname, n)){
+        if(isAlreadyDefined(pname, n, c)){
             c.use(n, {typeVarId() });
             //if(debugTP)println("Use <pname> at <current@\loc>");
         } else {

@@ -75,8 +75,8 @@ void collect(current: (Pattern) `<Type tp> <Name name>`, Collector c){
        orScopes = c.getScopeInfo(orScope());
        for(<_, orInfo(vars)> <- orScopes){
             for(str id <- vars, id == uname){
-                if(c.isAlreadyDefined("<name>", name)){
-                    c.use(name, {variableId(), formalId(), nestedFormalId(), patternVariableId()});
+                if(isAlreadyDefined("<name>", name, c)){
+                    c.use(name, {variableId(), moduleVariableId(), formalId(), nestedFormalId(), patternVariableId()});
                     return;
                 }
             }
@@ -131,7 +131,7 @@ void collect(current: (Pattern) `<QualifiedName name>`,  Collector c){
           c.fact(current, avalue(alabel=unescape(prettyPrintBaseName(name))));  
           c.define(base, formalId(), name, defLub([], AType(Solver _) { return avalue(alabel=unescape(prettyPrintBaseName(name))); }));
        } else {
-          if(c.isAlreadyDefined(base, name)){
+          if(isAlreadyDefined(base, name, c)){
             c.use(name, {variableId(), moduleVariableId(), formalId(), nestedFormalId(), patternVariableId()});
             c.report(info(name, "Pattern variable %q has been declared outside pattern and its value will be used, add explicit declaration here if you want a new variable", name));
           } else {
@@ -187,8 +187,8 @@ void collectSplicePattern(Pattern current, Pattern argument,  Collector c){
           orScopes = c.getScopeInfo(orScope());
           for(<_, orInfo(vars)> <- orScopes){
             for(str id <- vars, id == uname){
-                if(c.isAlreadyDefined(uname, argName)){
-                    c.use(argName, {variableId(), formalId(), nestedFormalId(), patternVariableId()});
+                if(isAlreadyDefined(uname, argName, c)){
+                    c.use(argName, {variableId(), moduleVariableId(), formalId(), nestedFormalId(), patternVariableId()});
                     return;
                 }
             }
@@ -219,7 +219,7 @@ void collectSplicePattern(Pattern current, Pattern argument,  Collector c){
               if(!isEmpty(qualifier)) c.report(error(argName, "Qualifier not allowed"));
               c.define(base, formalId(), argName, defLub([], AType(Solver _) { return avalue(); }));
            } else {
-              if(c.isAlreadyDefined("<argName>", argName)) {
+              if(isAlreadyDefined("<argName>", argName, c)) {
                   c.use(argName, {variableId(), moduleVariableId(), formalId(), nestedFormalId(), patternVariableId()});
                   c.report(info(argName, "Pattern variable %q has been declared outside pattern and its value will be used, add explicit declaration here if you want a new variable", argName));
               } else {
@@ -314,8 +314,8 @@ void collect(current: (Pattern) `<Type tp> <Name name> : <Pattern pattern>`, Col
         orScopes = c.getScopeInfo(orScope());
         for(<_, orInfo(vars)> <- orScopes){
             for(str id <- vars, id == uname){
-                if(c.isAlreadyDefined(uname, name)){
-                    c.use(name, {variableId(), formalId(), nestedFormalId(), patternVariableId()});
+                if(isAlreadyDefined(uname, name, c)){
+                    c.use(name, {variableId(), moduleVariableId(), formalId(), nestedFormalId(), patternVariableId()});
                     return;
                 }
             }

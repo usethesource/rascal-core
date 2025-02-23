@@ -428,7 +428,6 @@ ModuleStatus doSaveModule(set[str] component, map[str,set[str]] m_imports, map[s
                     };
 
         // Filter model for current module and replace functions in defType by their defined type
-
         defs = for(tup:<loc _scope, str _id, str _orgId, IdRole idRole, loc defined, DefInfo _defInfo> <- tm.defines){
                     if( ( idRole in variableRoles ?  isContainedInComponentScopes(defined)
                                                   : (  idRole in keepInTModelRoles
@@ -441,7 +440,6 @@ ModuleStatus doSaveModule(set[str] component, map[str,set[str]] m_imports, map[s
                             append tup;
                     }
                 };
-
         m1.defines = toSet(defs);
 
         m1.definitions = ( def.defined : def | Define def <- m1.defines);  // TODO this is derived info, can we derive it later?

@@ -251,3 +251,22 @@ test bool IfThen3() = illegalUseInModule("
      ");
 
 test bool IfThen4() = unexpectedType("value zz = { if(1) 10; }; ");
+
+test bool AssignToGlobal()
+= checkModuleOK("
+     module GlobalX
+          public int X = 1;
+          void main() {
+               X = X + 1;
+          }");
+
+test bool AssignToGlobalInOtherModule(){
+     writeModule("module GlobalX
+                 'public int X = 1;");
+     return checkModuleOK(
+          "module ChangeX
+          'import GlobalX;
+          'void main() {
+          '     X = X + 1;
+          '}");
+}
